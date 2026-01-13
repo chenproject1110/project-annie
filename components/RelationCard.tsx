@@ -10,7 +10,7 @@ interface RelationCardProps {
 
 export function RelationCard({ relation }: RelationCardProps) {
   const { relationType, node } = relation;
-  const title = getDisplayTitle(node);
+  const title = getDisplayTitle(node as any);
 
   return (
     <Link href={`/anime/${node.id}`} className="group">
