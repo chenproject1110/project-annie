@@ -1,0 +1,29 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 's1.anilist.co',
+        pathname: '/file/anilistcdn/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's2.anilist.co',
+        pathname: '/file/anilistcdn/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's3.anilist.co',
+        pathname: '/file/anilistcdn/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's4.anilist.co',
+        pathname: '/file/anilistcdn/**',
+      },
+    ],
+  },
+}
+
+module.exports = nextConfig
