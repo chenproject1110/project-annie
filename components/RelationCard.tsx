@@ -10,7 +10,7 @@ interface RelationCardProps {
 
 export function RelationCard({ relation }: RelationCardProps) {
   const { relationType, node } = relation;
-  const title = getDisplayTitle(node as any);
+  const title = getDisplayTitle(node);
 
   return (
     <Link href={`/anime/${node.id}`} className="group">
@@ -20,6 +20,7 @@ export function RelationCard({ relation }: RelationCardProps) {
             src={node.coverImage.extraLarge}
             alt={title}
             fill
+            sizes="(max-width: 640px) 42vw, (max-width: 1024px) 25vw, 200px"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute top-2 left-2">

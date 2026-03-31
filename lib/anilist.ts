@@ -1,5 +1,7 @@
 // AniList GraphQL API Client
 
+import type { MinimalAnime } from '@/types/anime';
+
 export type Season = 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL';
 export type MediaFormat = 'TV' | 'TV_SHORT' | 'MOVIE' | 'SPECIAL' | 'OVA' | 'ONA' | 'MUSIC';
 export type MediaSource = 'ORIGINAL' | 'MANGA' | 'LIGHT_NOVEL' | 'VISUAL_NOVEL' | 'VIDEO_GAME' | 'OTHER' | 'NOVEL' | 'DOUJINSHI' | 'ANIME' | 'WEB_NOVEL' | 'LIVE_ACTION' | 'GAME' | 'COMIC' | 'MULTIMEDIA_PROJECT' | 'PICTURE_BOOK';
@@ -325,6 +327,165 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
   }
 }
 
+const TRENDING_HERO_QUERY = `
+query ($perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(type: ANIME, sort: TRENDING_DESC, countryOfOrigin: JP) {
+      id
+      bannerImage
+      title {
+        english
+        romaji
+      }
+      coverImage {
+        extraLarge
+      }
+      description
+      genres
+    }
+  }
+}
+`;
+
+export interface TrendingHeroAnime {
+  id: number;
+  bannerImage: string | null;
+  title: AnimeTitle;
+  coverImage: CoverImage;
+  description: string | null;
+  genres: string[];
+}
+
+interface TrendingHeroResponse {
+  data: {
+    Page: {
+      media: TrendingHeroAnime[];
+    };
+  };
+}
+
+/**
+ * Current broadcast season + year for AniList queries (WINTER after December uses the following calendar year).
+ */
+export function getAnimeSeasonNow(d: Date = new Date()): { season: Season; year: number } {
+  const month = d.getMonth();
+  const year = d.getFullYear();
+  if (month === 11) return { season: 'WINTER', year: year + 1 };
+  if (month <= 1) return { season: 'WINTER', year };
+  if (month >= 2 && month <= 4) return { season: 'SPRING', year };
+  if (month >= 5 && month <= 7) return { season: 'SUMMER', year };
+  return { season: 'FALL', year };
+}
+
+const SEASON_TRENDING_HERO_QUERY = `
+query ($season: MediaSeason, $year: Int, $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(
+      type: ANIME
+      season: $season
+      seasonYear: $year
+      sort: TRENDING_DESC
+      countryOfOrigin: JP
+    ) {
+      id
+      bannerImage
+      title {
+        english
+        romaji
+      }
+      coverImage {
+        extraLarge
+      }
+      description
+      genres
+    }
+  }
+}
+`;
+
+interface SeasonTrendingHeroResponse {
+  data: {
+    Page: {
+      media: TrendingHeroAnime[];
+    };
+  };
+}
+
+/**
+ * Top trending anime for a given season (e.g. current season hero). Same shape as global trending hero.
+ */
+export async function fetchSeasonTrendingHero(
+  season: Season,
+  year: number,
+  limit: number = 6
+): Promise<TrendingHeroAnime[]> {
+  const response = await fetch(ANILIST_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      query: SEASON_TRENDING_HERO_QUERY,
+      variables: { season, year, perPage: limit },
+    }),
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`AniList API error: ${response.status}`);
+  }
+
+  const json: SeasonTrendingHeroResponse = await response.json();
+  return json.data.Page.media.filter((m) => !m.genres.includes('Hentai'));
+}
+
+/**
+ * Top trending titles for the home hero carousel.
+ * GraphQL includes `bannerImage` (wide art) and `coverImage.extraLarge` (poster fallback).
+ */
+export async function fetchTrendingHero(perPage: number = 8): Promise<TrendingHeroAnime[]> {
+  const response = await fetch(ANILIST_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      query: TRENDING_HERO_QUERY,
+      variables: { perPage },
+    }),
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`AniList API error: ${response.status}`);
+  }
+
+  const json: TrendingHeroResponse = await response.json();
+  return json.data.Page.media.filter((m) => !m.genres.includes('Hentai'));
+}
+
+/**
+ * First page of a season (by popularity), optionally prioritizing certain statuses — for home previews without full pagination.
+ */
+export async function fetchSeasonAnimeLimited(
+  season: Season,
+  year: number,
+  options?: { limit?: number; preferStatus?: AnimeStatus[] }
+): Promise<Anime[]> {
+  const limit = options?.limit ?? 6;
+  const { media } = await fetchAnimePage({ season, year }, 1, 50);
+  let list = media.filter((a) => !a.genres.includes('Hentai'));
+  const prefer = options?.preferStatus;
+  if (prefer && prefer.length > 0) {
+    const preferred = list.filter((a) => prefer.includes(a.status));
+    const other = list.filter((a) => !prefer.includes(a.status));
+    list = [...preferred, ...other];
+  }
+  return list.slice(0, limit);
+}
+
 /**
  * Get the primary studio name for an anime
  */
@@ -338,7 +499,7 @@ export function getPrimaryStudio(anime: Anime): string {
 /**
  * Get the display title (prefer English, fallback to Romaji)
  */
-export function getDisplayTitle(anime: Anime): string {
+export function getDisplayTitle(anime: MinimalAnime): string {
   return anime.title.english || anime.title.romaji;
 }
 

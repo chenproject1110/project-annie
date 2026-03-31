@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         images: [anime.coverImage.extraLarge],
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'Anime Not Found',
     };
@@ -55,7 +55,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   let anime;
   try {
     anime = await fetchAnimeDetail(animeId);
-  } catch (error) {
+  } catch {
     notFound();
   }
 
@@ -91,6 +91,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               src={anime.bannerImage}
               alt={title}
               fill
+              sizes="100vw"
               className="object-cover"
               priority
             />
@@ -100,11 +101,11 @@ export default async function AnimeDetailPage({ params }: PageProps) {
           </div>
 
           {/* Hero Content */}
-          <div className="absolute bottom-0 left-0 right-0 pb-4 sm:pb-8">
+          <div className="absolute bottom-[10px] left-0 right-0 pb-4 sm:pb-8">
             <div className="container mx-auto px-4 sm:px-6">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 sm:gap-2 text-gray-300 hover:text-white mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
+                className="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 text-gray-300 hover:text-white mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 Back to Home
@@ -141,7 +142,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
           <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 sm:gap-2 text-gray-300 hover:text-white mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
+              className="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 text-gray-300 hover:text-white mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
             >
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               Back to Home
@@ -184,6 +185,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 src={anime.coverImage.extraLarge}
                 alt={title}
                 fill
+                sizes="(max-width: 1024px) min(90vw, 20rem), 350px"
                 className="object-cover"
                 priority
               />

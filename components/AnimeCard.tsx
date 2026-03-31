@@ -14,7 +14,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
   const formattedDate = formatDateGMT8(anime.startDate);
 
   return (
-    <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-lg sm:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 cursor-pointer">
+    <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
       {/* Cover Image Container - Fixed Aspect Ratio */}
       <div className="relative w-full aspect-[2/3] overflow-hidden">
         <Image
@@ -27,10 +27,10 @@ export function AnimeCard({ anime }: AnimeCardProps) {
         />
         
         {/* Gradient Overlay - Hidden on mobile, shown on hover for desktop */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Desktop Hover Content - Only visible on md+ screens on hover */}
-        <div className="hidden md:flex absolute inset-0 p-4 lg:p-6 flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="hidden md:flex absolute inset-0 z-[2] p-4 lg:p-6 flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           {/* Title */}
           <h3 className="text-lg lg:text-2xl font-bold text-white mb-2 lg:mb-3 line-clamp-3 leading-tight">
             {title}
@@ -71,18 +71,18 @@ export function AnimeCard({ anime }: AnimeCardProps) {
           )}
         </div>
         
-        {/* Mobile: Always Visible Title Bar */}
-        <div className="md:hidden absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-2 sm:p-3">
-          <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 mb-1">
+        {/* Mobile: one layer — gradient meets image with no gap above card edge */}
+        <div className="md:hidden absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
+          <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">
             {title}
           </h3>
-          <p className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">
+          <p className="text-[10px] sm:text-xs text-gray-300 line-clamp-1 mt-0.5">
             {studio} {anime.episodes && `• ${anime.episodes} eps`}
           </p>
         </div>
         
         {/* Desktop: Quick Info Bar (hidden on hover) */}
-        <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 group-hover:opacity-0 transition-opacity duration-300">
+        <div className="hidden md:block absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-3 pt-12 pb-2.5 group-hover:opacity-0 transition-opacity duration-300">
           <h3 className="text-sm font-semibold text-white line-clamp-2">
             {title}
           </h3>

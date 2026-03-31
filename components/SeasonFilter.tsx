@@ -50,7 +50,7 @@ export function SeasonFilter({ currentYear, currentSeason, onLoadingChange }: Se
     
     // Use startTransition for non-blocking navigation
     startTransition(() => {
-      router.push(`/?${params.toString()}`);
+      router.push(`/browse?${params.toString()}`);
     });
   };
 
@@ -96,7 +96,7 @@ export function SeasonFilter({ currentYear, currentSeason, onLoadingChange }: Se
             <button
               key={season}
               onClick={() => handleSeasonChange(season)}
-              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${
+              className={`min-h-11 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap active:scale-95 ${
                 currentSeason === season
                   ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/50'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 hover:border-gray-600'

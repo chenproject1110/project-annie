@@ -19,6 +19,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
               src={node.image.large}
               alt={node.name.full}
               fill
+              sizes="80px"
               className="object-cover"
             />
           </div>
@@ -42,6 +43,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                 src={va.image.large}
                 alt={va.name.full}
                 fill
+                sizes="80px"
                 className="object-cover"
               />
             </div>

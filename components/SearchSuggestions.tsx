@@ -31,6 +31,7 @@ export function SearchSuggestions({ suggestions, isOpen, onClose }: SearchSugges
                 src={anime.coverImage.medium}
                 alt={title}
                 fill
+                sizes="48px"
                 className="object-cover"
               />
             </div>

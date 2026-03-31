@@ -9,7 +9,7 @@ export default function AnimeDetailLoading() {
         </div>
 
         {/* Hero Content Skeleton */}
-        <div className="absolute bottom-0 left-0 right-0 pb-8">
+        <div className="absolute bottom-[10px] left-0 right-0 pb-8">
           <div className="container mx-auto px-6">
             {/* Back Button Skeleton */}
             <div className="h-6 w-32 bg-gray-700 rounded animate-pulse mb-6" />
