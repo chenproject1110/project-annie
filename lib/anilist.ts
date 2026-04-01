@@ -342,6 +342,18 @@ query ($perPage: Int) {
       }
       description
       genres
+      episodes
+      studios {
+        nodes {
+          name
+        }
+      }
+      status
+      startDate {
+        year
+        month
+        day
+      }
     }
   }
 }
@@ -354,6 +366,10 @@ export interface TrendingHeroAnime {
   coverImage: CoverImage;
   description: string | null;
   genres: string[];
+  episodes: number | null;
+  studios: Studio;
+  status: AnimeStatus;
+  startDate: StartDate;
 }
 
 interface TrendingHeroResponse {
@@ -398,6 +414,18 @@ query ($season: MediaSeason, $year: Int, $perPage: Int) {
       }
       description
       genres
+      episodes
+      studios {
+        nodes {
+          name
+        }
+      }
+      status
+      startDate {
+        year
+        month
+        day
+      }
     }
   }
 }
@@ -489,7 +517,7 @@ export async function fetchSeasonAnimeLimited(
 /**
  * Get the primary studio name for an anime
  */
-export function getPrimaryStudio(anime: Anime): string {
+export function getPrimaryStudio(anime: Pick<Anime, 'studios'>): string {
   if (anime.studios?.nodes && anime.studios.nodes.length > 0) {
     return anime.studios.nodes[0].name;
   }

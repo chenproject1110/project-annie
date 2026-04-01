@@ -6,6 +6,10 @@ interface AnimeCardProps {
   anime: Anime;
 }
 
+/** Keeps hover copy readable on bright posters (sky, hair highlights, etc.). */
+const hoverCopyShadow =
+  '[text-shadow:0_1px_12px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)]';
+
 export function AnimeCard({ anime }: AnimeCardProps) {
   const title = getDisplayTitle(anime);
   const studio = getPrimaryStudio(anime);
@@ -25,50 +29,51 @@ export function AnimeCard({ anime }: AnimeCardProps) {
           className="object-cover w-full h-full"
           priority={false}
         />
-        
-        {/* Gradient Overlay - Hidden on mobile, shown on hover for desktop */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Desktop Hover Content - Only visible on md+ screens on hover */}
-        <div className="hidden md:flex absolute inset-0 z-[2] p-4 lg:p-6 flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          {/* Title */}
-          <h3 className="text-lg lg:text-2xl font-bold text-white mb-2 lg:mb-3 line-clamp-3 leading-tight">
-            {title}
-          </h3>
-          
-          {/* Metadata: Studio • Episodes • Status • Release Date */}
-          <div className="flex items-center flex-wrap gap-1.5 lg:gap-2 text-xs lg:text-sm text-gray-200 mb-2 lg:mb-4">
-            <span className="font-medium">{studio}</span>
-            
-            {anime.episodes && (
-              <>
-                <span className="text-gray-400">•</span>
-                <span>{anime.episodes} {anime.episodes === 1 ? 'ep' : 'eps'}</span>
-              </>
+
+        {/* Desktop Hover: full-card scrim + anchored copy so text fits narrow tiles */}
+        <div className="hidden md:flex absolute inset-0 z-[2] min-h-0 min-w-0 flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/65 to-black/90"
+            aria-hidden
+          />
+          <div className="relative flex h-full min-h-0 min-w-0 flex-col items-stretch justify-end gap-2 lg:gap-3 p-3 lg:p-5">
+            <h3
+              className={`shrink-0 text-base lg:text-xl font-bold text-white line-clamp-3 leading-tight break-words ${hoverCopyShadow}`}
+            >
+              {title}
+            </h3>
+            <p
+              className={`shrink-0 text-[11px] lg:text-xs font-medium text-white/90 break-words ${hoverCopyShadow}`}
+            >
+              {studio} - {statusLabel}
+              {anime.episodes != null && anime.episodes > 0 ? (
+                <>
+                  {' '}
+                  <span className="text-white/55">·</span>
+                  {` ${anime.episodes} ${anime.episodes === 1 ? 'ep' : 'eps'}`}
+                </>
+              ) : null}
+            </p>
+            <p
+              className={`shrink-0 text-xs lg:text-sm text-white/90 break-words ${hoverCopyShadow}`}
+            >
+              {releaseLabel}{' '}
+              <span className="font-semibold text-white">{formattedDate}</span>
+            </p>
+            {anime.genres && anime.genres.length > 0 && (
+              <div className="flex min-w-0 shrink-0 flex-wrap gap-1 lg:gap-1.5">
+                {anime.genres.slice(0, 4).map((genre) => (
+                  <span
+                    key={genre}
+                    className="max-w-full truncate px-1.5 py-0.5 lg:px-2 lg:py-1 text-[10px] lg:text-xs font-medium bg-violet-600/90 text-white rounded-md shadow-md"
+                    title={genre}
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
             )}
-            
-            <span className="text-gray-400">•</span>
-            <span className="font-medium">{statusLabel}</span>
-            
-            <span className="text-gray-400 hidden lg:inline">•</span>
-            <span className="text-gray-300 hidden lg:inline">
-              {releaseLabel} <span className="font-medium">{formattedDate}</span>
-            </span>
           </div>
-          
-          {/* Genres */}
-          {anime.genres && anime.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 lg:gap-2">
-              {anime.genres.slice(0, 4).map((genre) => (
-                <span
-                  key={genre}
-                  className="px-2 lg:px-3 py-1 lg:py-1.5 text-xs lg:text-sm font-medium bg-violet-600/90 text-white rounded-lg shadow-lg"
-                >
-                  {genre}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
         
         {/* Mobile: one layer — gradient meets image with no gap above card edge */}
