@@ -1,6 +1,6 @@
 export default function AnimeDetailLoading() {
   return (
-    <main className="min-h-screen bg-gray-950">
+    <main className="relative z-0 min-h-screen bg-gray-950 -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
       {/* Hero Section Skeleton - Showing banner version */}
       <div className="relative">
         {/* Banner Placeholder */}

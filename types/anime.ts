@@ -5,14 +5,14 @@ export interface MinimalAnimeTitle {
   native?: string | null;
 }
 
-/** Cover art used by cards and grids (`extraLarge` from AniList). */
+/** Cover art used by cards and grids (Jikan `images.webp.large_image_url`). */
 export interface MinimalAnimeCoverImage {
   extraLarge: string;
 }
 
-/** Shared card/grid shape: id, localized title, cover art (grid + relation cards). */
+/** Shared card/grid shape: MAL id, localized title, cover art (grid + relation cards). */
 export interface MinimalAnime {
-  id: number;
+  mal_id: number;
   title: MinimalAnimeTitle;
   coverImage: MinimalAnimeCoverImage;
 }

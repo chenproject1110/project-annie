@@ -4,23 +4,13 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 's1.anilist.co',
-        pathname: '/file/anilistcdn/**',
+        hostname: 'cdn.myanimelist.net',
+        pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 's2.anilist.co',
-        pathname: '/file/anilistcdn/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 's3.anilist.co',
-        pathname: '/file/anilistcdn/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 's4.anilist.co',
-        pathname: '/file/anilistcdn/**',
+        hostname: 'myanimelist.net',
+        pathname: '/images/**',
       },
     ],
   },

@@ -16,12 +16,8 @@ import {
 
 const AUTO_ADVANCE_MS = 8000;
 
-/** Multi-layer dark halo so title / body / links stay readable on bright blurred areas. Tune rgba alphas or px offsets here. */
 const copyShadowClass =
   '[text-shadow:0_2px_24px_rgba(0,0,0,0.88),0_1px_8px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)] md:[text-shadow:0_2px_22px_rgba(0,0,0,0.82),0_1px_6px_rgba(0,0,0,0.92),0_0_1px_rgba(0,0,0,1)]';
-
-const blurPlateClass =
-  'object-cover object-center scale-125 blur-[44px] saturate-[0.9] opacity-90';
 
 export interface TrendingHeroCarouselProps {
   items: TrendingHeroAnime[];
@@ -29,6 +25,13 @@ export interface TrendingHeroCarouselProps {
 
 const heroImageSizes =
   '(max-width: 768px) 100vw, (max-width: 1280px) min(100vw, 1280px), 1280px';
+
+const heroDesktopMaxBox =
+  'md:max-w-[min(100%,calc((min(78vh,860px))*(16/9)))] md:mx-auto';
+
+function heroArtUrl(item: TrendingHeroAnime): string {
+  return item.coverImage.extraLarge;
+}
 
 export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
   const reduceMotion = useReducedMotion();
@@ -58,7 +61,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
 
   return (
     <div
-      className="group relative md:aspect-[2.35/1] md:max-h-[min(78vh,860px)] overflow-hidden rounded-[32px] md:rounded-xl border border-white/10 bg-[#0a0a0a]"
+      className={`group relative w-full md:aspect-[16/9] md:min-h-[min(28rem,52vw)] md:max-h-[min(78vh,860px)] ${heroDesktopMaxBox} overflow-hidden rounded-[32px] md:rounded-xl border border-white/10 bg-[#0a0a0a]`}
       role="region"
       aria-roledescription="carousel"
       aria-label="Trending anime highlights"
@@ -73,40 +76,39 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
         else if (dx < -56) go(1);
       }}
     >
-      {/* Blurred plate: always portrait cover (same source as mobile hero) */}
+      {/* Background: same art, cinematic blur (global — no banner asset from API) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0a0a]" aria-hidden>
         {items.map((item, i) => {
-          const cover = item.coverImage.extraLarge;
+          const src = heroArtUrl(item);
           return (
             <motion.div
-              key={`silk-${item.id}`}
+              key={`bg-${item.mal_id}`}
               className="absolute inset-0"
               initial={false}
               animate={{ opacity: i === index ? 1 : 0 }}
               transition={fade}
             >
               <Image
-                src={cover}
+                src={src}
                 alt=""
                 fill
                 sizes={heroImageSizes}
-                className={blurPlateClass}
+                className="object-cover object-center blur-3xl opacity-40"
                 priority={i === 0}
                 quality={75}
               />
-              <div className="absolute inset-0 max-md:bg-[#0a0a0a]/50" />
             </motion.div>
           );
         })}
       </div>
 
-      {/* Primary art: portrait cover only (mobile full-bleed; desktop same cover in right frame) */}
-      <div className="relative z-[1] h-[min(56vh,520px)] sm:h-[min(60vh,580px)] md:absolute md:inset-0 md:h-full md:min-h-[340px] overflow-hidden rounded-[32px] md:rounded-xl">
+      {/* Foreground: sharp contain (mobile + desktop “Image 1” column) */}
+      <div className="relative z-[1] h-[min(56vh,520px)] sm:h-[min(60vh,580px)] md:absolute md:inset-0 md:h-full md:min-h-[min(28rem,52vw)] overflow-hidden rounded-[32px] md:rounded-xl">
         {items.map((item, i) => {
-          const cover = item.coverImage.extraLarge;
+          const src = heroArtUrl(item);
           return (
             <motion.div
-              key={`hero-${item.id}`}
+              key={`fg-${item.mal_id}`}
               className="absolute inset-0"
               initial={false}
               animate={{ opacity: i === index ? 1 : 0 }}
@@ -114,112 +116,122 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
               aria-hidden={i !== index}
             >
               <Image
-                src={cover}
+                src={src}
                 alt=""
                 fill
                 sizes={heroImageSizes}
-                className="object-cover object-center max-md:block md:hidden"
+                className="object-contain object-center max-md:object-[center_20%] md:hidden"
                 priority={i === 0}
                 quality={100}
               />
-              <div className="pointer-events-none absolute inset-y-0 right-0 z-[2] hidden w-[30%] max-w-xl items-center mr-[50px] justify-center pr-5 pl-2 md:flex lg:pr-8">
-                <div className="relative aspect-[2/3] w-full max-h-[min(89%,740px)] overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl shadow-black/40">
-                  <Image
-                    src={cover}
-                    alt=""
-                    fill
-                    sizes="(max-width: 1280px) 42vw, 400px"
-                    className="object-cover object-center"
-                    priority={i === 0}
-                    quality={100}
-                  />
-                </div>
-              </div>
             </motion.div>
           );
         })}
 
+        {/* Bottom read gradient for copy (global) */}
         <div
-          className="pointer-events-none absolute inset-x-0 -bottom-px left-0 right-0 top-[28%] z-[2] bg-gradient-to-t from-black via-black/80 to-transparent m-0 p-0 md:hidden"
+          className="pointer-events-none absolute inset-x-0 bottom-0 top-1/4 z-[2] bg-gradient-to-t from-black via-black/70 to-transparent md:top-[20%]"
           aria-hidden
         />
 
-        {/* Desktop: legibility ramp on text column only (matches prior bottom-left meta block) */}
         <div
-          className="pointer-events-none absolute bottom-0 left-0 right-[42%] top-[18%] z-[3] hidden  md:block"
-          aria-hidden
-        />
-
-        {/* Copy: title, genres, synopsis, CTA — bottom-left on mobile + desktop */}
-        <div
-          className={`pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col items-start justify-end text-left px-4 sm:px-6 md:right-[42%] md:px-10 md:pb-10 lg:px-14 lg:pb-12 ${
-            n > 1 ? 'pb-14 sm:pb-16 md:pb-20' : 'pb-6 sm:pb-8 md:pb-12'
+          className={`pointer-events-none absolute inset-0 z-[3] flex min-h-0 max-md:flex-col max-md:justify-end px-8 text-left md:grid md:grid-cols-[minmax(0,1fr)_minmax(15rem,min(38%,36rem))] md:grid-rows-1 md:items-stretch md:gap-6 md:px-8 md:pb-10 md:pt-10 ${
+            n > 1 ? 'pb-14 sm:pb-16 md:pb-16' : 'pb-6 sm:pb-8 md:pb-10'
           }`}
         >
-          <div className="relative w-full max-w-3xl min-h-[9.5rem] sm:min-h-[10rem] md:min-h-0 md:max-w-none">
+          <div className="pointer-events-none mt-auto flex min-h-0 w-full min-w-0 flex-col md:mt-0 md:h-full md:min-h-0">
+            <div className="relative min-h-[9.5rem] w-full max-w-3xl sm:min-h-[10rem] md:h-full md:min-h-0 md:max-w-none">
+              {items.map((item, i) => {
+                const title = item.title.english || item.title.romaji;
+                const studio = getPrimaryStudio(item);
+                const statusLabel = getStatusLabel(item.status);
+                const releaseLabel = getReleaseLabel(item.status);
+                const formattedDate = formatDateGMT8(item.startDate);
+                const blurb = stripHtml(item.description);
+                return (
+                  <motion.div
+                    key={`copy-${item.mal_id}`}
+                    className="absolute bottom-0 left-0 right-0 flex flex-col items-stretch justify-end space-y-2 md:space-y-3 min-w-0"
+                    initial={false}
+                    animate={{ opacity: i === index ? 1 : 0 }}
+                    transition={fade}
+                    aria-hidden={i !== index}
+                  >
+                    <h2
+                      className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight break-words ${copyShadowClass}`}
+                    >
+                      {title}
+                    </h2>
+                    <p
+                      className={`text-xs sm:text-sm font-medium text-white/90 break-words ${copyShadowClass}`}
+                    >
+                      {studio} - {statusLabel}
+                      {item.episodes != null && item.episodes > 0 ? (
+                        <>
+                          {' '}
+                          <span className="text-white/55">·</span>
+                          {` ${item.episodes} ${item.episodes === 1 ? 'ep' : 'eps'}`}
+                        </>
+                      ) : null}
+                    </p>
+                    <p className={`text-xs sm:text-sm text-white/90 break-words ${copyShadowClass}`}>
+                      {releaseLabel}{' '}
+                      <span className="font-semibold text-white">{formattedDate}</span>
+                    </p>
+                    {item.genres?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                        {item.genres.slice(0, 4).map((genre) => (
+                          <span
+                            key={genre}
+                            className="max-w-full truncate px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium bg-violet-600/90 text-white rounded-md shadow-md"
+                            title={genre}
+                          >
+                            {genre}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {blurb && (
+                      <p
+                        className={`text-sm sm:text-base text-gray-200/95 line-clamp-3 md:line-clamp-4 max-w-2xl lg:max-w-none ${copyShadowClass}`}
+                      >
+                        {blurb}
+                      </p>
+                    )}
+                    <span
+                      className={`inline-flex min-h-11 items-center text-sm font-semibold text-violet-400 pt-0.5 ${copyShadowClass}`}
+                    >
+                      View details →
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="relative mt-auto hidden min-h-0 w-full md:mt-0 md:block md:h-full">
             {items.map((item, i) => {
-              const title = item.title.english || item.title.romaji;
-              const studio = getPrimaryStudio(item);
-              const statusLabel = getStatusLabel(item.status);
-              const releaseLabel = getReleaseLabel(item.status);
-              const formattedDate = formatDateGMT8(item.startDate);
-              const blurb = stripHtml(item.description);
-              const preview = blurb.length > 200 ? `${blurb.slice(0, 197)}…` : blurb;
+              const src = heroArtUrl(item);
               return (
                 <motion.div
-                  key={`copy-${item.id}`}
-                  className="absolute bottom-0 left-0 right-0 flex flex-col items-stretch justify-end space-y-2 md:space-y-3 min-w-0"
+                  key={`poster-${item.mal_id}`}
+                  className="pointer-events-none absolute inset-0 flex items-end justify-center pb-2"
                   initial={false}
                   animate={{ opacity: i === index ? 1 : 0 }}
                   transition={fade}
                   aria-hidden={i !== index}
                 >
-                  <h2
-                    className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight break-words ${copyShadowClass}`}
-                  >
-                    {title}
-                  </h2>
-                  <p
-                    className={`text-xs sm:text-sm font-medium text-white/90 break-words ${copyShadowClass}`}
-                  >
-                    {studio} - {statusLabel}
-                    {item.episodes != null && item.episodes > 0 ? (
-                      <>
-                        {' '}
-                        <span className="text-white/55">·</span>
-                        {` ${item.episodes} ${item.episodes === 1 ? 'ep' : 'eps'}`}
-                      </>
-                    ) : null}
-                  </p>
-                  <p className={`text-xs sm:text-sm text-white/90 break-words ${copyShadowClass}`}>
-                    {releaseLabel}{' '}
-                    <span className="font-semibold text-white">{formattedDate}</span>
-                  </p>
-                  {item.genres?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                      {item.genres.slice(0, 4).map((genre) => (
-                        <span
-                          key={genre}
-                          className="max-w-full truncate px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium bg-violet-600/90 text-white rounded-md shadow-md"
-                          title={genre}
-                        >
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {preview && (
-                    <p
-                      className={`text-sm sm:text-base text-gray-200/95 line-clamp-2 md:line-clamp-3 max-w-2xl md:max-w-none ${copyShadowClass}`}
-                    >
-                      {preview}
-                    </p>
-                  )}
-                  <span
-                    className={`inline-flex min-h-11 items-center text-sm font-semibold text-violet-400 pt-0.5 ${copyShadowClass}`}
-                  >
-                    View details →
-                  </span>
+                  <div className="relative aspect-[2/3] w-full max-h-[min(740px,100%)] max-w-full overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl shadow-black/40 bg-black/20">
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      sizes="(max-width: 768px) 0px, 38vw, 480px"
+                      className="object-contain object-center"
+                      priority={i === 0}
+                      quality={100}
+                    />
+                  </div>
                 </motion.div>
               );
             })}
@@ -231,8 +243,8 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
         const title = item.title.english || item.title.romaji;
         return (
           <Link
-            key={`hit-${item.id}`}
-            href={`/anime/${item.id}`}
+            key={`hit-${item.mal_id}`}
+            href={`/anime/${item.mal_id}`}
             className={`absolute inset-0 z-[4] outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-inset ${
               i === index ? 'pointer-events-auto' : 'pointer-events-none'
             }`}
@@ -279,7 +291,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
           >
             {items.map((item, i) => (
               <button
-                key={`dot-${item.id}`}
+                key={`dot-${item.mal_id}`}
                 type="button"
                 role="tab"
                 aria-selected={i === index}

@@ -20,8 +20,8 @@ export function SearchSuggestions({ suggestions, isOpen, onClose }: SearchSugges
 
         return (
           <Link
-            key={anime.id}
-            href={`/anime/${anime.id}`}
+            key={anime.mal_id}
+            href={`/anime/${anime.mal_id}`}
             onClick={onClose}
             className="flex items-center gap-3 p-3 hover:bg-violet-600/20 transition-colors border-b border-gray-800 last:border-0"
           >

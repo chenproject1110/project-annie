@@ -9,7 +9,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Browse — PROJECT ANNIE',
-  description: 'Browse anime by season and year. Powered by AniList.',
+  description: 'Browse anime by season and year. Powered by MyAnimeList via Jikan.',
 };
 
 interface SearchParams {
@@ -40,7 +40,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
-      <div className="mx-auto max-w-7xl px-4 md:px-8 py-4 sm:py-8">
+      <div className="mx-auto max-w-7xl px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">Browse by season</h1>
           <p className="text-gray-400 text-sm sm:text-base mt-1">
@@ -63,16 +63,25 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
       </div>
 
       <footer className="border-t border-white/10 mt-12 sm:mt-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
+        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
           <p>
             Data provided by{' '}
             <a
-              href="https://anilist.co"
+              href="https://myanimelist.net"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300 transition-colors"
             >
-              AniList
+              MyAnimeList
+            </a>
+            {' · '}
+            <a
+              href="https://jikan.moe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              Jikan API
             </a>
           </p>
         </div>

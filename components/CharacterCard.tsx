@@ -14,14 +14,16 @@ export function CharacterCard({ character }: CharacterCardProps) {
       <div className="grid grid-cols-2 gap-0">
         {/* Character Side */}
         <div className="flex flex-col items-center p-4">
-          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50">
-            <Image
-              src={node.image.large}
-              alt={node.name.full}
-              fill
-              sizes="80px"
-              className="object-cover"
-            />
+          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50 bg-gray-700">
+            {node.image.large ? (
+              <Image
+                src={node.image.large}
+                alt={node.name.full}
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            ) : null}
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-white mb-1 line-clamp-2">
@@ -38,14 +40,16 @@ export function CharacterCard({ character }: CharacterCardProps) {
         {/* Voice Actor Side */}
         {va && (
           <div className="flex flex-col items-center p-4 border-l border-gray-700">
-            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600">
-              <Image
-                src={va.image.large}
-                alt={va.name.full}
-                fill
-                sizes="80px"
-                className="object-cover"
-              />
+            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600 bg-gray-700">
+              {va.image.large ? (
+                <Image
+                  src={va.image.large}
+                  alt={va.name.full}
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
+              ) : null}
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-400 mb-1">CV</p>

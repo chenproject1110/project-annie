@@ -69,7 +69,7 @@ export function Navbar() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-[100] px-4 md:px-8 pt-3 sm:pt-4 pb-1">
+    <header className="sticky top-0 z-[100] px-8 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:pt-[max(1rem,env(safe-area-inset-top,0px))] pb-1">
       <nav
         className="mx-auto max-w-7xl rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
         aria-label="Main"

@@ -13,16 +13,23 @@ export function RelationCard({ relation }: RelationCardProps) {
   const title = getDisplayTitle(node);
 
   return (
-    <Link href={`/anime/${node.id}`} className="group">
+    <Link href={`/anime/${node.mal_id}`} className="group">
       <div className="bg-gray-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all">
         <div className="relative aspect-[2/3]">
-          <Image
-            src={node.coverImage.extraLarge}
-            alt={title}
-            fill
-            sizes="(max-width: 640px) 42vw, (max-width: 1024px) 25vw, 200px"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          {node.coverImage.extraLarge ? (
+            <Image
+              src={node.coverImage.extraLarge}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 42vw, (max-width: 1024px) 25vw, 200px"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900"
+              aria-hidden
+            />
+          )}
           <div className="absolute top-2 left-2">
             <span className="px-2 py-1 bg-violet-600/90 text-white text-xs font-semibold rounded">
               {formatRelationType(relationType)}

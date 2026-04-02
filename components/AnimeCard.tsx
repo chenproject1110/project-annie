@@ -18,7 +18,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
   const formattedDate = formatDateGMT8(anime.startDate);
 
   return (
-    <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
+    <Link href={`/anime/${anime.mal_id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
       {/* Cover Image Container - Fixed Aspect Ratio */}
       <div className="relative w-full aspect-[2/3] overflow-hidden">
         <Image

@@ -1,34 +1,31 @@
 import { Metadata } from 'next';
 import {
-  fetchSeasonTrendingHero,
+  fetchTrendingByPopularity,
+  fetchSeasonNowAnime,
+  fetchSeasonUpcomingAnime,
   getAnimeSeasonNow,
-  fetchSeasonAnimeLimited,
+  getNextSeason,
 } from '@/lib/anilist';
 import { JapandiTrendingHeroBlock } from '@/components/JapandiTrendingHeroBlock';
 import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
-  description: 'Discover trending anime, now airing, and upcoming seasons. Powered by AniList.',
+  description: 'Discover trending anime, now airing, and upcoming seasons. Powered by MyAnimeList via Jikan.',
 };
 
 export default async function HomePage() {
-  let hero: Awaited<ReturnType<typeof fetchSeasonTrendingHero>> = [];
-  let spring: Awaited<ReturnType<typeof fetchSeasonAnimeLimited>> = [];
-  let summer: Awaited<ReturnType<typeof fetchSeasonAnimeLimited>> = [];
-  const { season: heroSeason, year: heroYear } = getAnimeSeasonNow();
+  let hero: Awaited<ReturnType<typeof fetchTrendingByPopularity>> = [];
+  let nowAiring: Awaited<ReturnType<typeof fetchSeasonNowAnime>> = [];
+  let upcoming: Awaited<ReturnType<typeof fetchSeasonUpcomingAnime>> = [];
+  const { season: nowSeason, year: nowYear } = getAnimeSeasonNow();
+  const nextBlock = getNextSeason(nowSeason, nowYear);
 
   try {
-    [hero, spring, summer] = await Promise.all([
-      fetchSeasonTrendingHero(heroSeason, heroYear, 6),
-      fetchSeasonAnimeLimited('SPRING', 2026, {
-        limit: 6,
-        preferStatus: ['RELEASING'],
-      }),
-      fetchSeasonAnimeLimited('SUMMER', 2026, {
-        limit: 6,
-        preferStatus: ['NOT_YET_RELEASED', 'RELEASING'],
-      }),
+    [hero, nowAiring, upcoming] = await Promise.all([
+      fetchTrendingByPopularity(8),
+      fetchSeasonNowAnime(6),
+      fetchSeasonUpcomingAnime(6),
     ]);
   } catch {
     // Sections below still render; hero empty state handled inline
@@ -41,35 +38,44 @@ export default async function HomePage() {
       <JapandiAnimeRowSection
         sectionId="now-airing-heading"
         title="Now airing"
-        subtitle="Spring 2026 — currently releasing"
-        showAllHref="/browse?year=2026&season=SPRING"
+        subtitle="Current season on MyAnimeList"
+        showAllHref={`/browse?year=${nowYear}&season=${nowSeason}`}
         showAllLabel="Show all"
-        items={spring}
+        items={nowAiring}
         emptyMessage="No listings available for this season yet."
       />
 
       <JapandiAnimeRowSection
         sectionId="coming-next-heading"
         title="Coming next"
-        subtitle="Summer 2026 — arriving soon"
-        showAllHref="/browse?year=2026&season=SUMMER"
+        subtitle="Upcoming season lineup"
+        showAllHref={`/browse?year=${nextBlock.year}&season=${nextBlock.season}`}
         showAllLabel="Show all"
-        items={summer}
+        items={upcoming}
         emptyMessage="No listings available for this season yet."
         bottomSpacingClassName="pb-12 sm:pb-20"
       />
 
       <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
+        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
           <p>
             Data provided by{' '}
             <a
-              href="https://anilist.co"
+              href="https://myanimelist.net"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300 transition-colors active:scale-95 inline-block"
             >
-              AniList
+              MyAnimeList
+            </a>
+            {' · '}
+            <a
+              href="https://jikan.moe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-400 hover:text-violet-300 transition-colors active:scale-95 inline-block"
+            >
+              Jikan API
             </a>
           </p>
         </div>

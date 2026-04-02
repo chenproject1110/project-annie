@@ -1,177 +1,367 @@
-// AniList GraphQL API for Detailed Single Anime
+// Jikan REST API — detailed anime + shared formatters
 
-import { AnimeDetail } from './anilist';
+import type {
+  AnimeDetail,
+  Character,
+  MediaFormat,
+  MediaSource,
+  Relation,
+  RelationType,
+} from './anilist';
 
-const ANILIST_API_URL = 'https://graphql.anilist.co';
+const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 
-const ANIME_DETAIL_QUERY = `
-query ($id: Int) {
-  Media(id: $id, type: ANIME) {
-    id
-    idMal
-    title {
-      romaji
-      english
-      native
-    }
-    coverImage {
-      extraLarge
-    }
-    bannerImage
-    description
-    format
-    episodes
-    duration
-    status
-    season
-    seasonYear
-    source
-    startDate {
-      year
-      month
-      day
-    }
-    endDate {
-      year
-      month
-      day
-    }
-    genres
-    studios {
-      nodes {
-        name
-        isAnimationStudio
-      }
-    }
-    relations {
-      edges {
-        relationType
-        node {
-          id
-          title {
-            romaji
-            english
-            native
-          }
-          coverImage {
-            extraLarge
-          }
-          format
-        }
-      }
-    }
-    characters(sort: ROLE, perPage: 12) {
-      edges {
-        role
-        node {
-          id
-          name {
-            full
-            native
-          }
-          image {
-            large
-          }
-        }
-        voiceActors(language: JAPANESE) {
-          name {
-            full
-            native
-          }
-          image {
-            large
-          }
-          language
-        }
-      }
-    }
-    externalLinks {
-      site
-      url
-      icon
-    }
-    nextAiringEpisode {
-      airingAt
-      timeUntilAiring
-      episode
-    }
-  }
+const serverCache: RequestInit = {
+  next: { revalidate: 3600 },
+};
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
-`;
 
-interface AnimeDetailResponse {
-  data: {
-    Media: AnimeDetail;
+async function jikanGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${JIKAN_API_URL}${path}`, serverCache);
+  if (!response.ok) {
+    throw new Error(`Jikan API error: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+interface JikanImages {
+  webp?: {
+    large_image_url?: string | null;
+    image_url?: string | null;
+  };
+  jpg?: {
+    large_image_url?: string | null;
+    image_url?: string | null;
   };
 }
 
-/**
- * Fetch detailed anime data by ID
- */
-export async function fetchAnimeDetail(id: number): Promise<AnimeDetail> {
-  try {
-    const response = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        query: ANIME_DETAIL_QUERY,
-        variables: { id },
-      }),
-      next: {
-        revalidate: 3600, // Cache for 1 hour
-      },
-    });
+interface JikanFullAnime {
+  mal_id: number;
+  title: string;
+  title_english?: string | null;
+  title_japanese?: string | null;
+  images: JikanImages;
+  synopsis?: string | null;
+  type?: string;
+  source?: string;
+  episodes?: number | null;
+  duration?: string | null;
+  status?: string;
+  airing?: boolean;
+  aired?: {
+    prop?: {
+      from?: { year?: number | null; month?: number | null; day?: number | null };
+      to?: { year?: number | null; month?: number | null; day?: number | null };
+    };
+  };
+  season?: string | null;
+  year?: number | null;
+  broadcast?: { string?: string | null };
+  producers?: { name: string }[];
+  studios?: { name: string }[];
+  genres?: { name: string }[];
+  relations?: {
+    relation: string;
+    entry: { mal_id: number; type: string; name: string; url: string }[];
+  }[];
+  external?: { name: string; url: string }[];
+}
 
-    if (!response.ok) {
-      throw new Error(`AniList API error: ${response.status}`);
-    }
+interface JikanAnimeById {
+  data: JikanFullAnime;
+}
 
-    const json: AnimeDetailResponse = await response.json();
-    return json.data.Media;
-  } catch (error) {
-    console.error('Error fetching anime detail:', error);
-    throw error;
+interface JikanCharacterEntry {
+  character: {
+    mal_id: number;
+    name: string;
+    images: JikanImages & {
+      jpg?: { image_url?: string | null };
+      webp?: { image_url?: string | null; small_image_url?: string | null };
+    };
+  };
+  role: string;
+  voice_actors?: {
+    person: {
+      name: string;
+      images?: { jpg?: { image_url?: string | null } };
+    };
+    language: string;
+  }[];
+}
+
+interface JikanCharactersResponse {
+  data: JikanCharacterEntry[];
+}
+
+function webpLarge(images: JikanImages | undefined): string {
+  return (
+    images?.webp?.large_image_url ||
+    images?.jpg?.large_image_url ||
+    images?.jpg?.image_url ||
+    ''
+  );
+}
+
+function characterImageLarge(
+  images: JikanCharacterEntry['character']['images'] | undefined
+): string {
+  if (!images) return '';
+  const w = images.webp?.image_url || images.webp?.small_image_url;
+  const j = images.jpg?.image_url;
+  return w || j || '';
+}
+
+function mapJikanStatus(
+  status: string | undefined,
+  airing: boolean | undefined
+): AnimeDetail['status'] {
+  if (airing) return 'RELEASING';
+  switch (status) {
+    case 'Currently Airing':
+      return 'RELEASING';
+    case 'Finished Airing':
+      return 'FINISHED';
+    case 'Not yet aired':
+      return 'NOT_YET_RELEASED';
+    default:
+      return 'FINISHED';
   }
 }
 
-/**
- * Format date to JST (Japan Standard Time)
- */
-export function formatDateJST(date: { year: number | null; month: number | null; day: number | null }): string {
+function mapJikanType(type: string | undefined): MediaFormat {
+  if (!type) return 'TV';
+  const t = type.toUpperCase().replace(/ /g, '_');
+  const allowed: MediaFormat[] = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'];
+  return (allowed.includes(t as MediaFormat) ? t : 'TV') as MediaFormat;
+}
+
+function mapJikanSource(src: string | undefined): MediaSource | null {
+  if (!src) return null;
+  const key = src.trim().toLowerCase();
+  const m: Record<string, MediaSource> = {
+    original: 'ORIGINAL',
+    manga: 'MANGA',
+    'light novel': 'LIGHT_NOVEL',
+    'visual novel': 'VISUAL_NOVEL',
+    'video game': 'VIDEO_GAME',
+    novel: 'NOVEL',
+    'web novel': 'WEB_NOVEL',
+    game: 'GAME',
+    'card game': 'GAME',
+    'picture book': 'PICTURE_BOOK',
+    music: 'OTHER',
+    '4-koma manga': 'MANGA',
+    other: 'OTHER',
+  };
+  return m[key] || 'OTHER';
+}
+
+function mapSeason(
+  s: string | null | undefined,
+  y: number | null | undefined
+): { season: AnimeDetail['season']; seasonYear: number | null } {
+  if (!s || y == null) return { season: null, seasonYear: null };
+  const map: Record<string, NonNullable<AnimeDetail['season']>> = {
+    winter: 'WINTER',
+    spring: 'SPRING',
+    summer: 'SUMMER',
+    fall: 'FALL',
+  };
+  const season = map[s.toLowerCase()] ?? null;
+  return { season, seasonYear: y };
+}
+
+function mapJikanRelationType(rel: string): RelationType {
+  const key = rel.toLowerCase().replace(/\s+/g, '_');
+  const m: Record<string, RelationType> = {
+    adaptation: 'ADAPTATION',
+    side_story: 'SIDE_STORY',
+    sequel: 'SEQUEL',
+    prequel: 'PREQUEL',
+    summary: 'SUMMARY',
+    alternative_version: 'ALTERNATIVE',
+    alternative_setting: 'ALTERNATIVE',
+    spin_off: 'SPIN_OFF',
+    parent_story: 'PARENT',
+    full_story: 'PARENT',
+    character: 'CHARACTER',
+    other: 'OTHER',
+    compilation: 'COMPILATION',
+    contains: 'CONTAINS',
+    source: 'SOURCE',
+  };
+  return m[key] || 'OTHER';
+}
+
+async function fetchCoverForMal(malId: number): Promise<string> {
+  const json = await jikanGet<JikanAnimeById>(`/anime/${malId}`);
+  return webpLarge(json.data.images);
+}
+
+export async function fetchAnimeDetail(malId: number): Promise<AnimeDetail> {
+  const full = await jikanGet<JikanAnimeById>(`/anime/${malId}/full`);
+  const data = full.data;
+
+  await sleep(340);
+  let charJson: JikanCharactersResponse;
+  try {
+    charJson = await jikanGet<JikanCharactersResponse>(`/anime/${malId}/characters`);
+  } catch {
+    charJson = { data: [] };
+  }
+
+  const relationAnimeIds: number[] = [];
+  for (const rel of data.relations ?? []) {
+    for (const ent of rel.entry ?? []) {
+      if (ent.type === 'anime') relationAnimeIds.push(ent.mal_id);
+    }
+  }
+  const uniqueIds = [...new Set(relationAnimeIds)].slice(0, 10);
+  const coverByMal = new Map<number, string>();
+
+  for (const id of uniqueIds) {
+    await sleep(340);
+    try {
+      const url = await fetchCoverForMal(id);
+      if (url) coverByMal.set(id, url);
+    } catch {
+      /* skip */
+    }
+  }
+
+  const english =
+    data.title_english && data.title_english.trim() !== '' ? data.title_english.trim() : null;
+  const romaji = data.title || 'Untitled';
+
+  const edges: Relation[] = [];
+  const seenRelatedMal = new Set<number>();
+  for (const rel of data.relations ?? []) {
+    const relationType = mapJikanRelationType(rel.relation);
+    for (const ent of rel.entry ?? []) {
+      if (ent.type !== 'anime') continue;
+      if (seenRelatedMal.has(ent.mal_id)) continue;
+      seenRelatedMal.add(ent.mal_id);
+      const coverUrl = coverByMal.get(ent.mal_id) || '';
+      edges.push({
+        relationType,
+        node: {
+          mal_id: ent.mal_id,
+          title: { english: null, romaji: ent.name, native: null },
+          coverImage: { extraLarge: coverUrl },
+          format: null,
+        },
+      });
+    }
+  }
+
+  const characterEdges: Character[] = (charJson.data ?? []).slice(0, 25).map((entry) => {
+    const jp = (entry.voice_actors ?? []).filter((v) => v.language === 'Japanese');
+    const va = jp[0];
+    return {
+      role: entry.role,
+      node: {
+        mal_id: entry.character.mal_id,
+        name: { full: entry.character.name, native: null },
+        image: { large: characterImageLarge(entry.character.images) },
+      },
+      voiceActors: va
+        ? [
+            {
+              name: { full: va.person.name, native: null },
+              image: { large: va.person.images?.jpg?.image_url || '' },
+              language: va.language,
+            },
+          ]
+        : [],
+    };
+  });
+
+  const studioNodes = [
+    ...(data.studios ?? []).map((s) => ({ name: s.name, isAnimationStudio: true })),
+    ...(data.producers ?? []).map((s) => ({ name: s.name, isAnimationStudio: false })),
+  ];
+
+  const { season, seasonYear } = mapSeason(data.season ?? null, data.year ?? null);
+
+  const detail: AnimeDetail = {
+    mal_id: data.mal_id,
+    title: {
+      english,
+      romaji,
+      native: data.title_japanese ?? null,
+    },
+    coverImage: { extraLarge: webpLarge(data.images) },
+    description: data.synopsis ?? null,
+    format: mapJikanType(data.type),
+    episodes: data.episodes ?? null,
+    duration: data.duration ?? null,
+    status: mapJikanStatus(data.status, data.airing),
+    season,
+    seasonYear,
+    source: mapJikanSource(data.source),
+    startDate: {
+      year: data.aired?.prop?.from?.year ?? null,
+      month: data.aired?.prop?.from?.month ?? null,
+      day: data.aired?.prop?.from?.day ?? null,
+    },
+    endDate: {
+      year: data.aired?.prop?.to?.year ?? null,
+      month: data.aired?.prop?.to?.month ?? null,
+      day: data.aired?.prop?.to?.day ?? null,
+    },
+    genres: [...new Set((data.genres ?? []).map((g) => g.name))],
+    studios: { nodes: studioNodes },
+    relations: { edges },
+    characters: { edges: characterEdges },
+    externalLinks: (data.external ?? []).map((e) => ({
+      site: e.name,
+      url: e.url,
+      icon: null,
+    })),
+    nextAiringEpisode: null,
+    broadcastSchedule: data.broadcast?.string?.trim() || null,
+  };
+
+  return detail;
+}
+
+export function formatDateJST(date: {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+}): string {
   const { year, month, day } = date;
-  
+
   if (!year) return 'TBA';
-  
-  // Create date object (month is 0-indexed in JS Date)
+
   const dateObj = new Date(year, (month || 1) - 1, day || 1);
-  
-  // Format to JST timezone
+
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-  
+
   return formatter.format(dateObj);
 }
 
-/**
- * Filter external links to only show Official Site, Twitter, and YouTube
- */
 export function filterExternalLinks(links: Array<{ site: string; url: string; icon: string | null }>) {
-  const allowedSites = ['Official Site', 'Twitter', 'YouTube'];
-  return links.filter(link => 
-    allowedSites.some(allowed => link.site.includes(allowed))
-  );
+  return links.filter((link) => {
+    const s = link.site.toLowerCase();
+    return (
+      s.includes('official') ||
+      s.includes('twitter') ||
+      s.includes('x (twitter)') ||
+      s.includes('youtube')
+    );
+  });
 }
 
-/**
- * Format media format for display
- */
 export function formatMediaFormat(format: string): string {
   const formatMap: Record<string, string> = {
     TV: 'TV Series',
@@ -185,12 +375,9 @@ export function formatMediaFormat(format: string): string {
   return formatMap[format] || format;
 }
 
-/**
- * Format media source for display
- */
 export function formatMediaSource(source: string | null): string {
   if (!source) return 'Unknown';
-  
+
   const sourceMap: Record<string, string> = {
     ORIGINAL: 'Original',
     MANGA: 'Manga',
@@ -211,10 +398,10 @@ export function formatMediaSource(source: string | null): string {
   return sourceMap[source] || source;
 }
 
-/**
- * Format relation type for display
- */
 export function formatRelationType(type: string): string {
+  if (type.includes(' ') && !type.includes('_')) {
+    return type;
+  }
   const typeMap: Record<string, string> = {
     ADAPTATION: 'Adaptation',
     PREQUEL: 'Prequel',
@@ -230,25 +417,18 @@ export function formatRelationType(type: string): string {
     COMPILATION: 'Compilation',
     CONTAINS: 'Contains',
   };
-  return typeMap[type] || type;
+  return typeMap[type] || type.replace(/_/g, ' ');
 }
 
-/**
- * Format broadcast schedule from nextAiringEpisode
- * Returns format like "Wednesdays at 23:00 (JST)"
- */
 export function formatBroadcastSchedule(airingAt: number): string {
-  // Convert Unix timestamp to Date in JST timezone
   const date = new Date(airingAt * 1000);
-  
-  // Get day of week in JST
+
   const dayFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
     weekday: 'long',
   });
   const dayOfWeek = dayFormatter.format(date);
-  
-  // Get time in JST (24-hour format)
+
   const timeFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
     hour: '2-digit',
@@ -256,21 +436,16 @@ export function formatBroadcastSchedule(airingAt: number): string {
     hour12: false,
   });
   const time = timeFormatter.format(date);
-  
+
   return `${dayOfWeek}s at ${time} (JST)`;
 }
 
-/**
- * Format time until next episode airs
- * Returns format like "Episode 5 in 2 days"
- */
 export function formatTimeUntilAiring(timeUntilAiring: number, episode: number): string {
-  
   const seconds = timeUntilAiring;
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   let timeString = '';
   if (days > 0) {
     timeString = `${days} day${days > 1 ? 's' : ''}`;
@@ -279,6 +454,6 @@ export function formatTimeUntilAiring(timeUntilAiring: number, episode: number):
   } else {
     timeString = `${minutes} minute${minutes > 1 ? 's' : ''}`;
   }
-  
+
   return `Episode ${episode} in ${timeString}`;
 }

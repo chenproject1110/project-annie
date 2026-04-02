@@ -101,7 +101,7 @@ export function JapandiAnimeRowSection({
 }: JapandiAnimeRowSectionProps) {
   return (
     <section
-      className={`mx-auto max-w-7xl px-4 md:px-8 ${bottomSpacingClassName}`}
+      className={`mx-auto max-w-7xl px-8 ${bottomSpacingClassName}`}
       aria-labelledby={sectionId}
     >
       <JapandiSectionHeader
@@ -119,7 +119,7 @@ export function JapandiAnimeRowSection({
           <div className="flex flex-nowrap md:grid md:grid-cols-6 gap-[0.75rem] overflow-x-auto md:overflow-visible pb-3 scrollbar-hide snap-x snap-mandatory md:snap-none scroll-smooth">
             {items.map((anime) => (
               <div
-                key={anime.id}
+                key={anime.mal_id}
                 className="w-[42vw] max-w-[168px] shrink-0 snap-start md:w-auto md:max-w-none"
               >
                 <AnimeCard anime={anime} />

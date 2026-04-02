@@ -1,14 +1,20 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE - Anime Discovery',
-  description: 'Discover anime from Winter 2013 to upcoming seasons. Powered by AniList.',
-  keywords: ['anime', 'discovery', 'anilist', 'seasons'],
+  description: 'Discover anime from Winter 2013 to upcoming seasons. Powered by MyAnimeList via Jikan.',
+  keywords: ['anime', 'discovery', 'myanimelist', 'jikan', 'seasons'],
 };
 
 export default function RootLayout({
