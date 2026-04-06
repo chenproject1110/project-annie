@@ -20,8 +20,8 @@ export function JapandiBrowseGridSkeleton() {
         <div>
           <p className="text-sm font-medium text-gray-200">Loading this season&apos;s catalog…</p>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            Large seasons load many pages from MyAnimeList. The grid will appear here as soon as data
-            is ready — the app is still working.
+            Loading the season catalog from AniList. The grid will appear here as soon as data
+            is ready.
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export async function JapandiBrowseAnimeGrid({ year, season }: JapandiBrowseAnim
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
         {animeList.map((anime) => (
-          <AnimeCard key={anime.mal_id} anime={anime} />
+          <AnimeCard key={anime.id} anime={anime} />
         ))}
       </div>
     );

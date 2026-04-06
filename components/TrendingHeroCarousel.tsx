@@ -5,329 +5,260 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import {
-  stripHtml,
-  type TrendingHeroAnime,
-  getPrimaryStudio,
-  getStatusLabel,
-  getReleaseLabel,
-  formatDateGMT8,
-} from '@/lib/anilist';
+import { type Anime, getPrimaryStudio, getStatusLabel } from '@/lib/anilist';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
+import {
+  JapandiShowAllLink,
+  JapandiSectionShowAllMobile,
+} from '@/components/JapandiAnimeRowSection';
 
-const AUTO_ADVANCE_MS = 8000;
+const AUTO_ADVANCE_MS = 7000;
 
-const copyShadowClass =
-  '[text-shadow:0_2px_24px_rgba(0,0,0,0.88),0_1px_8px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)] md:[text-shadow:0_2px_22px_rgba(0,0,0,0.82),0_1px_6px_rgba(0,0,0,0.92),0_0_1px_rgba(0,0,0,1)]';
+const copyShadow =
+  '[text-shadow:0_1px_12px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)]';
 
-export interface TrendingHeroCarouselProps {
-  items: TrendingHeroAnime[];
-}
-
-const heroImageSizes =
-  '(max-width: 768px) 100vw, (max-width: 1280px) min(100vw, 1280px), 1280px';
-
-const heroDesktopMaxBox =
-  'md:max-w-[min(100%,calc((min(78vh,860px))*(16/9)))] md:mx-auto';
-
-/** Banner when present; otherwise cover (double-layer fallback uses the same URL for blur + sharp). */
-function heroVisualUrl(item: TrendingHeroAnime): string {
+function cardImageUrl(item: Anime): string {
   const b = item.bannerImage?.trim();
   if (b) return b;
   return item.coverImage.extraLarge;
 }
 
-function imageUnoptimized(src: string): boolean {
-  try {
-    const h = new URL(src).hostname;
-    if (h === 'cdn.myanimelist.net') return false;
-    if (h === 'myanimelist.net' || h.endsWith('.myanimelist.net')) return false;
-    return true;
-  } catch {
-    return true;
-  }
-}
+/* ------------------------------------------------------------------ */
+/*  Single landscape card                                              */
+/* ------------------------------------------------------------------ */
 
-export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
+function TrendingCard({
+  anime,
+  rank,
+  index,
+}: {
+  anime: Anime;
+  rank: number;
+  index: number;
+}) {
   const { titleLanguage } = useTitleLanguage();
-  const reduceMotion = useReducedMotion();
-  const [index, setIndex] = useState(0);
-  const touchStartX = useRef<number | null>(null);
-  const n = items.length;
-
-  const go = useCallback(
-    (delta: number) => {
-      if (n === 0) return;
-      setIndex((i) => (i + delta + n) % n);
-    },
-    [n]
-  );
-
-  useEffect(() => {
-    if (n <= 1 || reduceMotion) return;
-    const id = window.setInterval(() => go(1), AUTO_ADVANCE_MS);
-    return () => clearInterval(id);
-  }, [n, go, reduceMotion]);
-
-  const fade = reduceMotion
-    ? { duration: 0.2, ease: 'easeOut' as const }
-    : { duration: 1.28, ease: [0.22, 0.61, 0.36, 1] as const };
-
-  if (n === 0) return null;
+  const title = displayTitleForLanguage(anime.title, titleLanguage);
+  const studio = getPrimaryStudio(anime);
+  const statusLabel = getStatusLabel(anime.status);
+  const src = cardImageUrl(anime);
 
   return (
-    <div
-      className={`group relative w-full md:aspect-[16/9] md:min-h-[min(28rem,52vw)] md:max-h-[min(78vh,860px)] ${heroDesktopMaxBox} overflow-hidden rounded-[32px] md:rounded-xl border border-white/10 bg-[#0a0a0a]`}
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.45,
+        delay: index * 0.04,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="w-[85vw] max-w-[22rem] md:w-[calc((100%-2rem)/2.5)] md:max-w-none shrink-0 snap-start"
+    >
+      <Link
+        href={`/anime/${anime.id}`}
+        className="group relative flex flex-col overflow-hidden rounded-2xl bg-transparent shadow-lg transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-2xl active:scale-[0.97] md:active:scale-100 cursor-pointer"
+        aria-label={`View ${title}`}
+      >
+        {/* Image container — 3:2 mobile, 16:9 desktop */}
+        <div className="relative w-full aspect-[3/2] md:aspect-video overflow-hidden rounded-2xl">
+          <Image
+            src={src}
+            alt={title}
+            fill
+            sizes="(max-width:768px) 85vw, 40vw"
+            className={`object-cover object-center transition-transform duration-500 group-hover:scale-105 ${
+              !anime.bannerImage?.trim() ? 'object-[center_20%]' : ''
+            }`}
+          />
+
+          {/* Rank number — large typographic watermark */}
+          <span
+            className="absolute top-3 left-3.5 z-[3] text-5xl md:text-6xl font-black leading-none text-black/80 select-none pointer-events-none [-webkit-text-stroke:1px_rgba(255,255,255,0.3)] [text-shadow:0_0_20px_rgba(255,255,255,0.2),0_0_4px_rgba(255,255,255,0.15)]"
+            aria-hidden
+          >
+            #{rank}
+          </span>
+
+          {/* Genre pills — top right (show 2 on mobile, 3rd revealed on md+) */}
+          {anime.genres?.length > 0 && (
+            <div className="absolute top-3 right-3 z-[3] flex gap-1.5">
+              {anime.genres.slice(0, 3).map((g, gi) => (
+                <span
+                  key={g}
+                  className={`max-w-[6rem] truncate px-2 py-0.5 text-[10px] md:text-xs font-medium bg-violet-600/90 text-white rounded-md shadow-md backdrop-blur-sm ${
+                    gi >= 2 ? 'hidden md:inline' : ''
+                  }`}
+                >
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Bottom gradient + copy */}
+          <div className="absolute inset-x-0 bottom-0 z-[2] rounded-b-2xl bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-16 px-4 pb-10 md:px-5 md:pb-4">
+            <h3
+              className={`text-base md:text-lg font-bold text-white line-clamp-2 leading-snug ${copyShadow}`}
+            >
+              {title}
+            </h3>
+            <p
+              className={`mt-1 text-xs md:text-sm text-white/80 line-clamp-1 ${copyShadow}`}
+            >
+              {studio}
+              {anime.episodes != null && anime.episodes > 0 && (
+                <>
+                  {' '}
+                  <span className="text-white/40">·</span>
+                  {` ${anime.episodes} eps`}
+                </>
+              )}
+              {' '}
+              <span className="text-white/40">·</span>
+              {` ${statusLabel}`}
+            </p>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main export                                                        */
+/* ------------------------------------------------------------------ */
+
+export interface TrendingCarouselProps {
+  items: Anime[];
+}
+
+export function TrendingCarousel({ items }: TrendingCarouselProps) {
+  const reduceMotion = useReducedMotion();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const pausedRef = useRef(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState]);
+
+  const scrollBy = useCallback((direction: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.querySelector<HTMLElement>(':scope > div')?.offsetWidth ?? 320;
+    const gap = 16;
+    el.scrollBy({ left: direction * (cardWidth + gap), behavior: 'smooth' });
+  }, []);
+
+  // Auto-advance
+  useEffect(() => {
+    if (items.length <= 1 || reduceMotion) return;
+    const id = setInterval(() => {
+      if (pausedRef.current) return;
+      const el = scrollRef.current;
+      if (!el) return;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        const cardWidth = el.querySelector<HTMLElement>(':scope > div')?.offsetWidth ?? 320;
+        el.scrollBy({ left: cardWidth + 16, behavior: 'smooth' });
+      }
+    }, AUTO_ADVANCE_MS);
+    return () => clearInterval(id);
+  }, [items.length, reduceMotion]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section
+      className="mx-auto max-w-7xl px-8 pb-10 sm:pb-14"
       role="region"
       aria-roledescription="carousel"
-      aria-label="Trending anime highlights"
-      onTouchStart={(e) => {
-        touchStartX.current = e.touches[0].clientX;
-      }}
-      onTouchEnd={(e) => {
-        if (touchStartX.current == null) return;
-        const dx = e.changedTouches[0].clientX - touchStartX.current;
-        touchStartX.current = null;
-        if (dx > 56) go(-1);
-        else if (dx < -56) go(1);
-      }}
+      aria-label="Trending anime"
     >
-      {/* Background: same art, cinematic blur (global — no banner asset from API) */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0a0a]" aria-hidden>
-        {items.map((item, i) => {
-          const src = heroVisualUrl(item);
-          return (
-            <motion.div
-              key={`bg-${item.mal_id}`}
-              className="absolute inset-0"
-              initial={false}
-              animate={{ opacity: i === index ? 1 : 0 }}
-              transition={fade}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes={heroImageSizes}
-                className="object-cover object-center blur-3xl opacity-40"
-                priority={i === 0}
-                quality={75}
-                unoptimized={imageUnoptimized(src)}
-              />
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Foreground: sharp contain (mobile + desktop “Image 1” column) */}
-      <div className="relative z-[1] h-[min(56vh,520px)] sm:h-[min(60vh,580px)] md:absolute md:inset-0 md:h-full md:min-h-[min(28rem,52vw)] overflow-hidden rounded-[32px] md:rounded-xl">
-        {items.map((item, i) => {
-          const src = heroVisualUrl(item);
-          return (
-            <motion.div
-              key={`fg-${item.mal_id}`}
-              className="absolute inset-0"
-              initial={false}
-              animate={{ opacity: i === index ? 1 : 0 }}
-              transition={fade}
-              aria-hidden={i !== index}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes={heroImageSizes}
-                className="object-contain object-center max-md:object-[center_20%] md:hidden"
-                priority={i === 0}
-                quality={100}
-                unoptimized={imageUnoptimized(src)}
-              />
-            </motion.div>
-          );
-        })}
-
-        {/* Bottom read gradient for copy (global) */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 top-1/4 z-[2] bg-gradient-to-t from-black via-black/70 to-transparent md:top-[20%]"
-          aria-hidden
-        />
-
-        <div
-          className={`pointer-events-none absolute inset-0 z-[3] flex min-h-0 max-md:flex-col max-md:justify-end px-8 text-left md:grid md:grid-cols-[minmax(0,1fr)_minmax(15rem,min(38%,36rem))] md:grid-rows-1 md:items-stretch md:gap-6 md:px-8 md:pb-10 md:pt-10 ${
-            n > 1 ? 'pb-14 sm:pb-16 md:pb-16' : 'pb-6 sm:pb-8 md:pb-10'
-          }`}
-        >
-          <div className="pointer-events-none mt-auto flex min-h-0 w-full min-w-0 flex-col md:mt-0 md:h-full md:min-h-0">
-            <div className="relative min-h-[9.5rem] w-full max-w-3xl sm:min-h-[10rem] md:h-full md:min-h-0 md:max-w-none">
-              {items.map((item, i) => {
-                const title = displayTitleForLanguage(item.title, titleLanguage);
-                const studio = getPrimaryStudio(item);
-                const statusLabel = getStatusLabel(item.status);
-                const releaseLabel = getReleaseLabel(item.status);
-                const formattedDate = formatDateGMT8(item.startDate);
-                const blurb = stripHtml(item.description);
-                return (
-                  <motion.div
-                    key={`copy-${item.mal_id}`}
-                    className="absolute bottom-0 left-0 right-0 flex flex-col items-stretch justify-end space-y-2 md:space-y-3 min-w-0"
-                    initial={false}
-                    animate={{ opacity: i === index ? 1 : 0 }}
-                    transition={fade}
-                    aria-hidden={i !== index}
-                  >
-                    <h2
-                      className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight break-words ${copyShadowClass}`}
-                    >
-                      {title}
-                    </h2>
-                    <p
-                      className={`text-xs sm:text-sm font-medium text-white/90 break-words ${copyShadowClass}`}
-                    >
-                      {studio} - {statusLabel}
-                      {item.episodes != null && item.episodes > 0 ? (
-                        <>
-                          {' '}
-                          <span className="text-white/55">·</span>
-                          {` ${item.episodes} ${item.episodes === 1 ? 'ep' : 'eps'}`}
-                        </>
-                      ) : null}
-                    </p>
-                    <p className={`text-xs sm:text-sm text-white/90 break-words ${copyShadowClass}`}>
-                      {releaseLabel}{' '}
-                      <span className="font-semibold text-white">{formattedDate}</span>
-                    </p>
-                    {item.genres?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                        {item.genres.slice(0, 4).map((genre) => (
-                          <span
-                            key={genre}
-                            className="max-w-full truncate px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium bg-violet-600/90 text-white rounded-md shadow-md"
-                            title={genre}
-                          >
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {blurb && (
-                      <p
-                        className={`text-sm sm:text-base text-gray-200/95 line-clamp-3 md:line-clamp-4 max-w-2xl lg:max-w-none ${copyShadowClass}`}
-                      >
-                        {blurb}
-                      </p>
-                    )}
-                    <span
-                      className={`inline-flex min-h-11 items-center text-sm font-semibold text-violet-400 pt-0.5 ${copyShadowClass}`}
-                    >
-                      View details →
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="relative mt-auto hidden min-h-0 w-full md:mt-0 md:block md:h-full">
-            {items.map((item, i) => {
-              const src = heroVisualUrl(item);
-              return (
-                <motion.div
-                  key={`poster-${item.mal_id}`}
-                  className="pointer-events-none absolute inset-0 flex items-end justify-center pb-2"
-                  initial={false}
-                  animate={{ opacity: i === index ? 1 : 0 }}
-                  transition={fade}
-                  aria-hidden={i !== index}
-                >
-                  <div className="relative aspect-[2/3] w-full max-h-[min(740px,100%)] max-w-full overflow-hidden rounded-2xl ring-1 ring-white/15 shadow-2xl shadow-black/40 bg-black/20">
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      sizes="(max-width: 768px) 0px, 38vw, 480px"
-                      className="object-contain object-center"
-                      priority={i === 0}
-                      quality={100}
-                      unoptimized={imageUnoptimized(src)}
-                    />
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-4 md:mb-6">
+        <div>
+          <h2 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+            Trending now
+          </h2>
+          <p className="text-gray-400 text-sm sm:text-base mt-1">
+            Most popular across all seasons
+          </p>
+        </div>
+        <div className="hidden md:flex shrink-0">
+          <JapandiShowAllLink href="/browse" label="Show all" variant="header" />
         </div>
       </div>
 
-      {items.map((item, i) => {
-        const title = displayTitleForLanguage(item.title, titleLanguage);
-        return (
-          <Link
-            key={`hit-${item.mal_id}`}
-            href={`/anime/${item.mal_id}`}
-            className={`absolute inset-0 z-[4] outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-inset ${
-              i === index ? 'pointer-events-auto' : 'pointer-events-none'
-            }`}
-            aria-hidden={i !== index}
-            tabIndex={i === index ? 0 : -1}
-            aria-label={`View ${title}`}
-          />
-        );
-      })}
+      {/* Carousel track */}
+      <div
+        className="group/carousel relative"
+        onMouseEnter={() => { pausedRef.current = true; }}
+        onMouseLeave={() => { pausedRef.current = false; }}
+        onTouchStart={() => { pausedRef.current = true; }}
+        onTouchEnd={() => {
+          setTimeout(() => { pausedRef.current = false; }, 4000);
+        }}
+      >
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth pb-2"
+        >
+          {items.map((anime, i) => (
+            <TrendingCard
+              key={anime.id}
+              anime={anime}
+              rank={i + 1}
+              index={i}
+            />
+          ))}
+        </div>
 
-      {n > 1 && (
-        <>
-          <div className="absolute inset-y-0 left-0 right-0 z-[6] flex items-center justify-between px-1 sm:px-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                go(-1);
-              }}
-              className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 min-h-11 min-w-11"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="h-5 w-5" strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                go(1);
-              }}
-              className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 min-h-11 min-w-11"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="h-5 w-5" strokeWidth={2} />
-            </button>
-          </div>
+        {/* Chevron — Left */}
+        <button
+          type="button"
+          onClick={() => scrollBy(-1)}
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
+            canScrollLeft ? 'md:opacity-0 md:group-hover/carousel:opacity-100' : 'md:opacity-0 pointer-events-none'
+          }`}
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2} />
+        </button>
 
-          <div
-            className="absolute bottom-3 left-0 right-0 z-[6] flex justify-center gap-1.5 pointer-events-auto"
-            role="tablist"
-            aria-label="Slide indicators"
-          >
-            {items.map((item, i) => (
-              <button
-                key={`dot-${item.mal_id}`}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                aria-label={`Show slide ${i + 1}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIndex(i);
-                }}
-                className={`h-1.5 rounded-full transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] ${
-                  i === index ? 'w-6 bg-violet-500' : 'w-1.5 bg-white/20 hover:bg-white/35'
-                }`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        {/* Chevron — Right */}
+        <button
+          type="button"
+          onClick={() => scrollBy(1)}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
+            canScrollRight ? 'md:opacity-0 md:group-hover/carousel:opacity-100' : 'md:opacity-0 pointer-events-none'
+          }`}
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="h-5 w-5" strokeWidth={2} />
+        </button>
+      </div>
+
+      {/* Mobile "Show all" */}
+      <JapandiSectionShowAllMobile showAllHref="/browse" showAllLabel="Show all" />
+    </section>
   );
 }

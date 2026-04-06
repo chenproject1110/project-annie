@@ -1,4 +1,4 @@
-// Jikan API (MyAnimeList) Client for Theme Songs
+// Jikan API (MyAnimeList) — theme songs only (OP/ED not available from AniList)
 
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 

@@ -2,29 +2,33 @@ import { Metadata } from 'next';
 import {
   fetchSeasonNowAnime,
   fetchSeasonUpcomingAnime,
+  fetchTrendingByPopularity,
   getAnimeSeasonNow,
   getNextSeason,
   type Anime,
 } from '@/lib/anilist';
 import { WeeklyAiringSchedule } from '@/components/JapandiTrendingHeroBlock';
+import { TrendingCarousel } from '@/components/TrendingHeroCarousel';
 import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
   description:
-    'Discover trending anime, now airing, and upcoming seasons. Powered by MyAnimeList via Jikan.',
+    'Discover trending anime, now airing, and upcoming seasons. Powered by AniList.',
 };
 
 export default async function HomePage() {
   let nowAiring: Anime[] = [];
   let upcoming: Anime[] = [];
+  let trending: Anime[] = [];
   const { season: nowSeason, year: nowYear } = getAnimeSeasonNow();
   const nextBlock = getNextSeason(nowSeason, nowYear);
 
   try {
-    [nowAiring, upcoming] = await Promise.all([
+    [nowAiring, upcoming, trending] = await Promise.all([
       fetchSeasonNowAnime(6),
       fetchSeasonUpcomingAnime(6),
+      fetchTrendingByPopularity(8),
     ]);
   } catch {
     // Sections below still render
@@ -33,6 +37,10 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
       <WeeklyAiringSchedule />
+
+      {trending.length > 0 && (
+        <TrendingCarousel items={trending} />
+      )}
 
       <JapandiAnimeRowSection
         sectionId="now-airing-heading"
@@ -58,14 +66,14 @@ export default async function HomePage() {
       <footer className="border-t border-white/10">
         <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
           <p>
-            Data from MyAnimeList via{' '}
+            Data from{' '}
             <a
-              href="https://jikan.moe"
+              href="https://anilist.co"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300 transition-colors active:scale-95 inline-block"
             >
-              Jikan
+              AniList
             </a>
             .
           </p>

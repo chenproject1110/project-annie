@@ -8,7 +8,7 @@ import { Clock } from 'lucide-react';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
 import type { AnimeTitle } from '@/lib/anilist';
 
-const JIKAN_API = 'https://api.jikan.moe/v4';
+const ANILIST_API = 'https://graphql.anilist.co';
 
 const DAYS = [
   'monday',
@@ -74,98 +74,159 @@ function checkAiringNow(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Jikan schedule types & fetcher                                     */
+/*  AniList airing schedule types & fetcher                            */
 /* ------------------------------------------------------------------ */
 
-interface JikanScheduleItem {
-  mal_id: number;
-  title: string;
-  title_english?: string | null;
-  title_japanese?: string | null;
-  images?: {
-    webp?: { large_image_url?: string | null };
-    jpg?: {
-      large_image_url?: string | null;
-      image_url?: string | null;
-    };
-  };
-  broadcast?: { time?: string | null };
-  episodes?: number | null;
-  genres?: Array<{ name: string }>;
-  explicit_genres?: Array<{ name: string }>;
-  themes?: Array<{ name: string }>;
-  demographics?: Array<{ name: string }>;
-  studios?: Array<{ name: string }>;
-}
-
 interface ScheduleAnime {
-  mal_id: number;
+  id: number;
   title: AnimeTitle;
   coverImage: string;
   broadcastTime: string | null;
   episodes: number | null;
   genres: string[];
   studio: string;
+  status: 'airing' | 'upcoming';
 }
 
-function isAdult(item: JikanScheduleItem): boolean {
-  const all = [
-    ...(item.genres ?? []),
-    ...(item.explicit_genres ?? []),
-    ...(item.themes ?? []),
-    ...(item.demographics ?? []),
-  ];
-  return all.some((g) => {
-    const n = g.name.toLowerCase();
-    return n === 'hentai' || n === 'erotica';
-  });
-}
+const SCHEDULE_QUERY = `
+  query ($page: Int, $perPage: Int, $start: Int, $end: Int) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
+      airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
+        airingAt
+        episode
+        media {
+          id
+          format
+          title { romaji english native }
+          coverImage { extraLarge large }
+          episodes
+          genres
+          studios(isMain: true) { nodes { name } }
+          status
+          isAdult
+        }
+      }
+    }
+  }
+`;
 
-function toScheduleAnime(item: JikanScheduleItem): ScheduleAnime {
-  return {
-    mal_id: item.mal_id,
-    title: {
-      english: item.title_english?.trim() || null,
-      romaji: item.title || 'Untitled',
-      native: item.title_japanese || null,
-    },
-    coverImage:
-      item.images?.webp?.large_image_url ||
-      item.images?.jpg?.large_image_url ||
-      item.images?.jpg?.image_url ||
-      '',
-    broadcastTime: item.broadcast?.time?.trim() || null,
-    episodes: item.episodes ?? null,
-    genres: (item.genres ?? []).map((g) => g.name),
-    studio: item.studios?.[0]?.name || '',
+interface AniListAiringEntry {
+  airingAt: number;
+  episode: number;
+  media: {
+    id: number;
+    format: string | null;
+    title: { romaji: string; english: string | null; native: string | null };
+    coverImage: { extraLarge: string; large: string | null };
+    episodes: number | null;
+    genres: string[];
+    studios: { nodes: Array<{ name: string }> };
+    status: string;
+    isAdult: boolean;
   };
 }
 
-async function fetchSchedule(day: string): Promise<ScheduleAnime[]> {
-  const res = await fetch(
-    `${JIKAN_API}/schedules?filter=${day}&limit=25&sfw=true`,
-  );
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  const data: JikanScheduleItem[] = Array.isArray(json?.data) ? json.data : [];
+function formatJSTTime(airingAt: number): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Tokyo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(airingAt * 1000));
+}
 
-  const items = data.filter((i) => !isAdult(i)).map(toScheduleAnime);
+/** Compute the UTC unix-second range for a given day-of-week in the current JST week. */
+function getJSTWeekDayRange(day: DayKey): [number, number] {
+  const JST_OFFSET = 9 * 3600;
+  const nowUnix = Math.floor(Date.now() / 1000);
 
-  const seen = new Set<number>();
-  const unique = items.filter((a) => {
-    if (seen.has(a.mal_id)) return false;
-    seen.add(a.mal_id);
-    return true;
-  });
+  const jstTime = nowUnix + JST_OFFSET;
+  const todayMidnightJST = Math.floor(jstTime / 86400) * 86400 - JST_OFFSET;
 
-  unique.sort((a, b) => {
+  const todayDate = new Date((todayMidnightJST + JST_OFFSET) * 1000);
+  const todayDayNum = todayDate.getUTCDay(); // 0=Sun
+
+  const mondayOffset = todayDayNum === 0 ? -6 : 1 - todayDayNum;
+  const mondayMidnight = todayMidnightJST + mondayOffset * 86400;
+
+  const dayFromMonday: Record<DayKey, number> = {
+    monday: 0,
+    tuesday: 1,
+    wednesday: 2,
+    thursday: 3,
+    friday: 4,
+    saturday: 5,
+    sunday: 6,
+  };
+
+  const targetMidnight = mondayMidnight + dayFromMonday[day] * 86400;
+  return [targetMidnight, targetMidnight + 86400];
+}
+
+async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
+  const [start, end] = getJSTWeekDayRange(day);
+
+  const entries: AniListAiringEntry[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext && page <= 3) {
+    const res = await fetch(ANILIST_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: SCHEDULE_QUERY,
+        variables: { page, perPage: 50, start, end },
+      }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.errors?.length) throw new Error(json.errors[0].message);
+
+    const data = json.data.Page;
+    entries.push(...(data.airingSchedules || []));
+    hasNext = data.pageInfo.hasNextPage;
+    page++;
+  }
+
+  const seen = new Map<number, ScheduleAnime>();
+  for (const entry of entries) {
+    if (entry.media.isAdult) continue;
+    const fmt = entry.media.format;
+    if (fmt === 'ONA' || fmt === 'TV_SHORT') continue;
+    if (seen.has(entry.media.id)) continue;
+
+    seen.set(entry.media.id, {
+      id: entry.media.id,
+      title: {
+        english: entry.media.title.english || null,
+        romaji: entry.media.title.romaji || 'Untitled',
+        native: entry.media.title.native || null,
+      },
+      coverImage:
+        entry.media.coverImage.extraLarge ||
+        entry.media.coverImage.large ||
+        '',
+      broadcastTime: formatJSTTime(entry.airingAt),
+      episodes: entry.media.episodes,
+      genres: entry.media.genres || [],
+      studio: entry.media.studios?.nodes?.[0]?.name || '',
+      status:
+        entry.media.status === 'NOT_YET_RELEASED' ? 'upcoming' : 'airing',
+    });
+  }
+
+  const result = [...seen.values()];
+  result.sort((a, b) => {
     if (!a.broadcastTime && !b.broadcastTime) return 0;
     if (!a.broadcastTime) return 1;
     if (!b.broadcastTime) return -1;
     return a.broadcastTime.localeCompare(b.broadcastTime);
   });
 
-  return unique;
+  return result;
 }
 
 /* ------------------------------------------------------------------ */
@@ -198,7 +259,7 @@ function ScheduleCard({
       }}
     >
       <Link
-        href={`/anime/${anime.mal_id}`}
+        href={`/anime/${anime.id}`}
         className={`group relative flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer ${
           isLive
             ? 'ring-2 ring-violet-500/60 shadow-[0_0_24px_rgba(139,92,246,0.25)]'
@@ -239,6 +300,16 @@ function ScheduleCard({
               </span>
               <span className="text-[10px] font-bold text-violet-200 uppercase tracking-wider">
                 Live
+              </span>
+            </div>
+          )}
+
+          {/* Upcoming badge */}
+          {!isLive && anime.status === 'upcoming' && (
+            <div className="absolute top-2 left-2 z-[3] flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/20 backdrop-blur-md border border-amber-400/30">
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+              <span className="text-[10px] font-bold text-amber-200 uppercase tracking-wider">
+                Upcoming
               </span>
             </div>
           )}
@@ -492,10 +563,10 @@ export function WeeklyAiringSchedule() {
           >
             {schedule.map((anime, i) => (
               <ScheduleCard
-                key={anime.mal_id}
+                key={anime.id}
                 anime={anime}
                 index={i}
-                isLive={checkAiringNow(anime.broadcastTime, selectedDay)}
+                isLive={anime.status === 'airing' && checkAiringNow(anime.broadcastTime, selectedDay)}
               />
             ))}
           </motion.div>

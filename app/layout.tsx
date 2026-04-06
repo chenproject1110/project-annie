@@ -15,8 +15,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE - Anime Discovery',
   description:
-    'Discover anime from Winter 2013 to upcoming seasons. Powered by MyAnimeList via Jikan.',
-  keywords: ['anime', 'discovery', 'myanimelist', 'jikan', 'seasons'],
+    'Discover anime from Winter 2013 to upcoming seasons. Powered by AniList.',
+  keywords: ['anime', 'discovery', 'anilist', 'seasons'],
 };
 
 export default function RootLayout({

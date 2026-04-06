@@ -26,16 +26,16 @@ function heroImageUrl(anime: { coverImage: { extraLarge: string } }): string {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const malId = parseInt(params.id, 10);
+  const id = parseInt(params.id, 10);
 
-  if (Number.isNaN(malId)) {
+  if (Number.isNaN(id)) {
     return {
       title: 'Anime Not Found',
     };
   }
 
   try {
-    const anime = await fetchAnimeDetail(malId);
+    const anime = await fetchAnimeDetail(id);
     const title = anime.title.english || anime.title.romaji;
     const description = stripHtml(anime.description);
 
@@ -56,19 +56,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function AnimeDetailPage({ params }: PageProps) {
-  const malId = parseInt(params.id, 10);
+  const id = parseInt(params.id, 10);
 
-  if (Number.isNaN(malId)) {
+  if (Number.isNaN(id)) {
     notFound();
   }
 
   let anime;
   let themes: Awaited<ReturnType<typeof fetchAnimeThemes>>;
   try {
-    [anime, themes] = await Promise.all([
-      fetchAnimeDetail(malId),
-      fetchAnimeThemes(malId),
-    ]);
+    anime = await fetchAnimeDetail(id);
+    themes = await fetchAnimeThemes(anime.idMal);
   } catch {
     notFound();
   }
@@ -368,7 +366,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                   {relationEdges.slice(0, 10).map((relation, index) => (
-                    <RelationCard key={`${relation.node.mal_id}-${index}`} relation={relation} />
+                    <RelationCard key={`${relation.node.id}-${index}`} relation={relation} />
                   ))}
                 </div>
               </div>

@@ -64,7 +64,7 @@ export function SearchBar({ isOpen }: SearchBarProps) {
     }
 
     if (list.length > 0) {
-      router.push(`/anime/${list[0].mal_id}`);
+      router.push(`/anime/${list[0].id}`);
       setShowSuggestions(false);
       setSearchTerm('');
     }

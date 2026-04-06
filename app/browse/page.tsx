@@ -7,12 +7,12 @@ import {
   JapandiBrowseGridSkeleton,
 } from '@/components/JapandiBrowseAnimeGrid';
 
-/** Allow long seasonal fetches (many Jikan pages) on serverless hosts that support it. */
+/** Allow long seasonal fetches on serverless hosts that support it. */
 export const maxDuration = 120;
 
 export const metadata: Metadata = {
   title: 'Browse — PROJECT ANNIE',
-  description: 'Browse anime by season and year. Powered by MyAnimeList via Jikan.',
+  description: 'Browse anime by season and year. Powered by AniList.',
 };
 
 interface SearchParams {
@@ -73,21 +73,12 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
           <p>
             Data provided by{' '}
             <a
-              href="https://myanimelist.net"
+              href="https://anilist.co"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300 transition-colors"
             >
-              MyAnimeList
-            </a>
-            {' · '}
-            <a
-              href="https://jikan.moe"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              Jikan API
+              AniList
             </a>
           </p>
         </div>
