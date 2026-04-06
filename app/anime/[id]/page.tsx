@@ -93,8 +93,8 @@ export default async function AnimeDetailPage({ params }: PageProps) {
     <main className="relative z-0 min-h-screen bg-[#0a0a0a] -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
       {/* Double-layer hero (global): blurred backdrop + sharp contain — no MAL banner asset */}
       <div className="relative">
-        <div className="relative h-[220px] sm:h-[320px] md:h-[420px] w-full overflow-hidden">
-          <div className="absolute inset-0 bg-[#0a0a0a]" aria-hidden>
+        <div className="relative h-[350px] sm:h-[320px] md:h-[420px] w-full overflow-visible">
+          <div className="absolute -top-20 sm:-top-20 inset-x-0 bottom-0 bg-[#0a0a0a]" aria-hidden>
             <Image
               src={art}
               alt=""
@@ -104,8 +104,8 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               priority
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/80 pointer-events-none" />
+          <div className="absolute -top-20 sm:-top-20 inset-x-0 -bottom-16 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent pointer-events-none" />
+          <div className="absolute -top-20 sm:-top-20 inset-x-0 bottom-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/80 pointer-events-none" />
         </div>
 
         <div className="absolute bottom-[10px] left-0 right-0 pb-4 sm:pb-8">
@@ -119,7 +119,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             </Link>
 
             <div className="flex flex-col sm:flex-row sm:items-end gap-2 mb-2 sm:mb-4">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
+              <h1 className="text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
                 {title}
               </h1>
               {anime.status && (
@@ -138,13 +138,13 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             </div>
 
             {anime.title.native && (
-              <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-1 sm:mb-2">
+              <p className="text-sm min-[350px]:text-base sm:text-lg md:text-xl text-gray-300 mb-1 sm:mb-2">
                 {anime.title.native}
               </p>
             )}
 
             {anime.title.romaji !== title && (
-              <p className="text-sm sm:text-base md:text-lg text-gray-400">{anime.title.romaji}</p>
+              <p className="text-xs min-[350px]:text-sm sm:text-base md:text-lg text-gray-400">{anime.title.romaji}</p>
             )}
           </div>
         </div>
