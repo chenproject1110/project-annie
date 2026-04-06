@@ -13,6 +13,7 @@ import {
   getReleaseLabel,
   formatDateGMT8,
 } from '@/lib/anilist';
+import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
 
 const AUTO_ADVANCE_MS = 8000;
 
@@ -29,11 +30,26 @@ const heroImageSizes =
 const heroDesktopMaxBox =
   'md:max-w-[min(100%,calc((min(78vh,860px))*(16/9)))] md:mx-auto';
 
-function heroArtUrl(item: TrendingHeroAnime): string {
+/** Banner when present; otherwise cover (double-layer fallback uses the same URL for blur + sharp). */
+function heroVisualUrl(item: TrendingHeroAnime): string {
+  const b = item.bannerImage?.trim();
+  if (b) return b;
   return item.coverImage.extraLarge;
 }
 
+function imageUnoptimized(src: string): boolean {
+  try {
+    const h = new URL(src).hostname;
+    if (h === 'cdn.myanimelist.net') return false;
+    if (h === 'myanimelist.net' || h.endsWith('.myanimelist.net')) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
+  const { titleLanguage } = useTitleLanguage();
   const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -79,7 +95,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
       {/* Background: same art, cinematic blur (global — no banner asset from API) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0a0a]" aria-hidden>
         {items.map((item, i) => {
-          const src = heroArtUrl(item);
+          const src = heroVisualUrl(item);
           return (
             <motion.div
               key={`bg-${item.mal_id}`}
@@ -96,6 +112,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
                 className="object-cover object-center blur-3xl opacity-40"
                 priority={i === 0}
                 quality={75}
+                unoptimized={imageUnoptimized(src)}
               />
             </motion.div>
           );
@@ -105,7 +122,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
       {/* Foreground: sharp contain (mobile + desktop “Image 1” column) */}
       <div className="relative z-[1] h-[min(56vh,520px)] sm:h-[min(60vh,580px)] md:absolute md:inset-0 md:h-full md:min-h-[min(28rem,52vw)] overflow-hidden rounded-[32px] md:rounded-xl">
         {items.map((item, i) => {
-          const src = heroArtUrl(item);
+          const src = heroVisualUrl(item);
           return (
             <motion.div
               key={`fg-${item.mal_id}`}
@@ -123,6 +140,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
                 className="object-contain object-center max-md:object-[center_20%] md:hidden"
                 priority={i === 0}
                 quality={100}
+                unoptimized={imageUnoptimized(src)}
               />
             </motion.div>
           );
@@ -142,7 +160,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
           <div className="pointer-events-none mt-auto flex min-h-0 w-full min-w-0 flex-col md:mt-0 md:h-full md:min-h-0">
             <div className="relative min-h-[9.5rem] w-full max-w-3xl sm:min-h-[10rem] md:h-full md:min-h-0 md:max-w-none">
               {items.map((item, i) => {
-                const title = item.title.english || item.title.romaji;
+                const title = displayTitleForLanguage(item.title, titleLanguage);
                 const studio = getPrimaryStudio(item);
                 const statusLabel = getStatusLabel(item.status);
                 const releaseLabel = getReleaseLabel(item.status);
@@ -211,7 +229,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
 
           <div className="relative mt-auto hidden min-h-0 w-full md:mt-0 md:block md:h-full">
             {items.map((item, i) => {
-              const src = heroArtUrl(item);
+              const src = heroVisualUrl(item);
               return (
                 <motion.div
                   key={`poster-${item.mal_id}`}
@@ -230,6 +248,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
                       className="object-contain object-center"
                       priority={i === 0}
                       quality={100}
+                      unoptimized={imageUnoptimized(src)}
                     />
                   </div>
                 </motion.div>
@@ -240,7 +259,7 @@ export function TrendingHeroCarousel({ items }: TrendingHeroCarouselProps) {
       </div>
 
       {items.map((item, i) => {
-        const title = item.title.english || item.title.romaji;
+        const title = displayTitleForLanguage(item.title, titleLanguage);
         return (
           <Link
             key={`hit-${item.mal_id}`}

@@ -7,6 +7,9 @@ import {
   JapandiBrowseGridSkeleton,
 } from '@/components/JapandiBrowseAnimeGrid';
 
+/** Allow long seasonal fetches (many Jikan pages) on serverless hosts that support it. */
+export const maxDuration = 120;
+
 export const metadata: Metadata = {
   title: 'Browse — PROJECT ANNIE',
   description: 'Browse anime by season and year. Powered by MyAnimeList via Jikan.',
@@ -56,7 +59,10 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
             <p className="text-gray-400 text-sm sm:text-base mt-1">Sorted by Popularity</p>
           </div>
 
-          <Suspense fallback={<JapandiBrowseGridSkeleton />}>
+          <Suspense
+            key={`${validYear}-${season}`}
+            fallback={<JapandiBrowseGridSkeleton />}
+          >
             <JapandiBrowseAnimeGrid year={validYear} season={season} />
           </Suspense>
         </AnimeGridWrapper>

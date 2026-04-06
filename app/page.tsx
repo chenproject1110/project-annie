@@ -1,44 +1,43 @@
 import { Metadata } from 'next';
 import {
-  fetchTrendingByPopularity,
   fetchSeasonNowAnime,
   fetchSeasonUpcomingAnime,
   getAnimeSeasonNow,
   getNextSeason,
+  type Anime,
 } from '@/lib/anilist';
-import { JapandiTrendingHeroBlock } from '@/components/JapandiTrendingHeroBlock';
+import { WeeklyAiringSchedule } from '@/components/JapandiTrendingHeroBlock';
 import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
-  description: 'Discover trending anime, now airing, and upcoming seasons. Powered by MyAnimeList via Jikan.',
+  description:
+    'Discover trending anime, now airing, and upcoming seasons. Powered by MyAnimeList via Jikan.',
 };
 
 export default async function HomePage() {
-  let hero: Awaited<ReturnType<typeof fetchTrendingByPopularity>> = [];
-  let nowAiring: Awaited<ReturnType<typeof fetchSeasonNowAnime>> = [];
-  let upcoming: Awaited<ReturnType<typeof fetchSeasonUpcomingAnime>> = [];
+  let nowAiring: Anime[] = [];
+  let upcoming: Anime[] = [];
   const { season: nowSeason, year: nowYear } = getAnimeSeasonNow();
   const nextBlock = getNextSeason(nowSeason, nowYear);
 
   try {
-    [hero, nowAiring, upcoming] = await Promise.all([
-      fetchTrendingByPopularity(8),
+    [nowAiring, upcoming] = await Promise.all([
       fetchSeasonNowAnime(6),
       fetchSeasonUpcomingAnime(6),
     ]);
   } catch {
-    // Sections below still render; hero empty state handled inline
+    // Sections below still render
   }
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
-      <JapandiTrendingHeroBlock items={hero} />
+      <WeeklyAiringSchedule />
 
       <JapandiAnimeRowSection
         sectionId="now-airing-heading"
         title="Now airing"
-        subtitle="Current season on MyAnimeList"
+        subtitle="Current season"
         showAllHref={`/browse?year=${nowYear}&season=${nowSeason}`}
         showAllLabel="Show all"
         items={nowAiring}
@@ -59,24 +58,16 @@ export default async function HomePage() {
       <footer className="border-t border-white/10">
         <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
           <p>
-            Data provided by{' '}
-            <a
-              href="https://myanimelist.net"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-400 hover:text-violet-300 transition-colors active:scale-95 inline-block"
-            >
-              MyAnimeList
-            </a>
-            {' · '}
+            Data from MyAnimeList via{' '}
             <a
               href="https://jikan.moe"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300 transition-colors active:scale-95 inline-block"
             >
-              Jikan API
+              Jikan
             </a>
+            .
           </p>
         </div>
       </footer>

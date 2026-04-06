@@ -1,4 +1,4 @@
-// Jikan REST API (MyAnimeList) client — types kept compatible with existing UI components.
+// Jikan REST API (MyAnimeList) client — all data sourced from Jikan v4.
 
 import type { MinimalAnime } from '@/types/anime';
 
@@ -43,6 +43,8 @@ export interface AnimeTitle {
 
 export interface CoverImage {
   extraLarge: string;
+  large?: string | null;
+  color?: string | null;
 }
 
 export interface Studio {
@@ -63,6 +65,7 @@ export interface Anime {
   mal_id: number;
   title: AnimeTitle;
   coverImage: CoverImage;
+  bannerImage?: string | null;
   description: string | null;
   genres: string[];
   episodes: number | null;
@@ -165,15 +168,58 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Jikan sends `Retry-After` as seconds or an HTTP date on 429. */
+function parseRetryAfterMs(response: Response): number | null {
+  const h = response.headers.get('Retry-After');
+  if (!h) return null;
+  const sec = parseInt(h, 10);
+  if (!Number.isNaN(sec)) return sec * 1000;
+  const when = Date.parse(h);
+  if (!Number.isNaN(when)) return Math.max(0, when - Date.now());
+  return null;
+}
+
+const JIKAN_RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * Fetch from Jikan with retries. Rate limits (429) and transient 5xx are common;
+ * a single failure was surfacing as "Failed to load anime" until manual refresh.
+ */
 async function jikanGet<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${JIKAN_API_URL}${path}`, {
-    ...serverCache,
-    ...init,
-  });
-  if (!response.ok) {
-    throw new Error(`Jikan API error: ${response.status}`);
+  const url = `${JIKAN_API_URL}${path}`;
+  const maxAttempts = 8;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...serverCache,
+        ...init,
+      });
+    } catch {
+      if (attempt === maxAttempts - 1) {
+        throw new Error('Jikan API error: network');
+      }
+      await sleep(Math.min(20_000, 900 * 2 ** attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      return response.json() as Promise<T>;
+    }
+
+    const status = response.status;
+    const retryable = JIKAN_RETRYABLE.has(status);
+    if (!retryable || attempt === maxAttempts - 1) {
+      throw new Error(`Jikan API error: ${status}`);
+    }
+
+    const fromHeader = parseRetryAfterMs(response);
+    const backoff = fromHeader ?? Math.min(20_000, 900 * 2 ** attempt);
+    await sleep(backoff);
   }
-  return response.json() as Promise<T>;
+
+  throw new Error('Jikan API error: exhausted retries');
 }
 
 interface JikanGenre {
@@ -337,26 +383,45 @@ async function fetchJikanAnimePage(path: string): Promise<{ items: Anime[]; hasN
   return { items, hasNext: json.pagination.has_next_page };
 }
 
+/** Stay under Jikan’s ~3 req/s public limit; sequential avoids burst 429s from parallel waves. */
+const JIKAN_PAGE_GAP_MS = 420;
+
 /**
- * Season browse or search (paginated). Respects ~3 req/s with a short delay between pages.
+ * Fetch paginated anime one page at a time with a fixed gap between requests.
+ * Parallel batches were faster but often tripped rate limits mid-season → total failure.
+ */
+async function fetchJikanAnimePagesSequential(
+  buildPath: (page: number) => string,
+  maxPages: number
+): Promise<Anime[]> {
+  const all: Anime[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext && page <= maxPages) {
+    if (page > 1) await sleep(JIKAN_PAGE_GAP_MS);
+    const { items, hasNext: next } = await fetchJikanAnimePage(buildPath(page));
+    all.push(...items);
+    hasNext = next;
+    page++;
+  }
+
+  return all;
+}
+
+/**
+ * Season browse or search (paginated). Sequential requests with spacing for stable Jikan behavior.
  */
 export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
-  const all: Anime[] = [];
   const perPage = 25;
 
   if (params.search?.trim()) {
     const q = encodeURIComponent(params.search.trim());
-    let page = 1;
-    let hasNext = true;
     const maxPages = 50;
-    while (hasNext && page <= maxPages) {
-      if (page > 1) await sleep(340);
-      const path = `/anime?q=${q}&page=${page}&limit=${perPage}&order_by=popularity`;
-      const { items, hasNext: next } = await fetchJikanAnimePage(path);
-      all.push(...items);
-      hasNext = next;
-      page++;
-    }
+    const all = await fetchJikanAnimePagesSequential(
+      (page) => `/anime?q=${q}&page=${page}&limit=${perPage}&order_by=popularity`,
+      maxPages
+    );
     return dedupeByMalId(all);
   }
 
@@ -365,17 +430,11 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
   }
 
   const jSeason = seasonToJikanPath(params.season);
-  let page = 1;
-  let hasNext = true;
   const maxPages = 80;
-  while (hasNext && page <= maxPages) {
-    if (page > 1) await sleep(340);
-    const path = `/seasons/${params.year}/${jSeason}?page=${page}&limit=${perPage}`;
-    const { items, hasNext: next } = await fetchJikanAnimePage(path);
-    all.push(...items);
-    hasNext = next;
-    page++;
-  }
+  const all = await fetchJikanAnimePagesSequential(
+    (page) => `/seasons/${params.year}/${jSeason}?page=${page}&limit=${perPage}`,
+    maxPages
+  );
 
   const unique = dedupeByMalId(all);
   const desc = `${params.season} ${params.year}`;

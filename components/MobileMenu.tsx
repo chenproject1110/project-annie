@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Logo } from '@/components/Logo';
 
 export interface JapandiNavLink {
   href: string;
@@ -16,43 +15,61 @@ export interface MobileMenuProps {
   links: readonly JapandiNavLink[];
 }
 
-function CloseMenuIcon({ open }: { open: boolean }) {
-  const reduceMotion = useReducedMotion();
-  const t = reduceMotion ? { duration: 0.15 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const };
+const BACKDROP_EASE = [0.22, 1, 0.36, 1] as const;
 
-  return (
-    <div className="relative h-5 w-6" aria-hidden>
-      <motion.span
-        className="absolute left-0 top-[5px] block h-0.5 w-6 rounded-full bg-current"
-        initial={false}
-        animate={
-          open
-            ? { top: 10, rotate: 45, transition: t }
-            : { top: 5, rotate: 0, transition: t }
-        }
-      />
-      <motion.span
-        className="absolute left-0 top-[15px] block h-0.5 w-6 rounded-full bg-current"
-        initial={false}
-        animate={
-          open
-            ? { top: 10, rotate: -45, transition: t }
-            : { top: 15, rotate: 0, transition: t }
-        }
-      />
-    </div>
-  );
-}
+const panelVariants = {
+  hidden: { x: '100%' },
+  visible: {
+    x: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 340,
+      damping: 32,
+      mass: 0.8,
+      when: 'beforeChildren',
+      staggerChildren: 0.06,
+    },
+  },
+  exit: {
+    x: '100%',
+    transition: {
+      type: 'tween' as const,
+      duration: 0.28,
+      ease: BACKDROP_EASE,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring' as const, stiffness: 380, damping: 28 },
+  },
+  exit: { opacity: 0, y: 8, transition: { duration: 0.12 } },
+};
 
 export function MobileMenu({ open, onClose, pathname, links }: MobileMenuProps) {
   const reduceMotion = useReducedMotion();
 
   const backdropTransition = reduceMotion
     ? { duration: 0.15 }
-    : { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const };
-  const panelTransition = reduceMotion
-    ? { duration: 0.2 }
-    : { type: 'tween' as const, duration: 0.38, ease: [0.22, 1, 0.36, 1] as const };
+    : { duration: 0.32, ease: BACKDROP_EASE };
+
+  const reducedPanel = {
+    hidden: { x: '100%' },
+    visible: { x: 0, transition: { duration: 0.2 } },
+    exit: { x: '100%', transition: { duration: 0.15 } },
+  };
+  const reducedItem = {
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0 } },
+    exit: { opacity: 0, transition: { duration: 0.1 } },
+  };
+
+  const usedPanelVariants = reduceMotion ? reducedPanel : panelVariants;
+  const usedItemVariants = reduceMotion ? reducedItem : itemVariants;
 
   return (
     <AnimatePresence>
@@ -77,54 +94,62 @@ export function MobileMenu({ open, onClose, pathname, links }: MobileMenuProps) 
           aria-modal="true"
           aria-label="Site menu"
           className="fixed right-0 top-0 z-[201] flex h-full w-[min(100%,20rem)] flex-col border-l border-white/10 bg-black/70 backdrop-blur-xl shadow-[-12px_0_40px_rgba(0,0,0,0.5)] sm:hidden"
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={panelTransition}
+          variants={usedPanelVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-            <Link
-              href="/"
-              className="flex items-center gap-2 min-h-11 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-              onClick={onClose}
-            >
-              <Logo showText={false} className="scale-90" />
-              <span className="mt-[4px] font-bold text-sm text-white tracking-tight leading-none">
-                PROJECT <span className="text-violet-400">ANNIE</span>
-              </span>
-            </Link>
-            <button
-              type="button"
-              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-gray-200 hover:bg-white/10 border border-white/10"
-              aria-label="Close menu"
-              onClick={onClose}
-            >
-              <CloseMenuIcon open />
-            </button>
-          </div>
+          <nav className="flex flex-1 flex-col gap-3 px-8 pt-8 pb-6" aria-label="Mobile">
+            {/* Profile / sign-in card */}
+            <motion.div variants={usedItemVariants}>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-h-[3rem] text-left transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
+                onClick={() => { /* future auth hook */ }}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                  </svg>
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-sm font-semibold text-white">Sign In</span>
+                  <span className="text-xs text-gray-400">Track &amp; sync your list</span>
+                </span>
+              </button>
+            </motion.div>
 
-          <nav className="flex flex-1 flex-col gap-2 p-4" aria-label="Mobile">
+            {/* Separator */}
+            <motion.div
+              className="h-px w-full bg-white/10"
+              variants={usedItemVariants}
+              aria-hidden="true"
+            />
+
+            {/* Navigation links */}
             {links.map(({ href, label }) => {
               const active = pathname === href;
               return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={onClose}
-                  className={`relative flex min-h-[3.25rem] items-center rounded-2xl border px-5 text-lg font-semibold transition-colors active:scale-[0.99] ${
-                    active
-                      ? 'border-violet-500/50 bg-violet-500/10 text-white'
-                      : 'border-white/10 bg-white/[0.04] text-gray-100 hover:bg-white/[0.08]'
-                  }`}
-                >
-                  {active && (
-                    <span
-                      className="absolute left-0 top-1/2 h-10 w-1 -translate-y-1/2 rounded-r-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.6)]"
-                      aria-hidden
-                    />
-                  )}
-                  <span className={active ? 'pl-2' : ''}>{label}</span>
-                </Link>
+                <motion.div key={href} variants={usedItemVariants}>
+                  <Link
+                    href={href}
+                    onClick={onClose}
+                    className={`relative flex min-h-[3rem] items-center rounded-2xl border px-5 text-lg font-semibold transition-colors active:scale-[0.98] py-3 ${
+                      active
+                        ? 'border-violet-500/50 bg-violet-500/10 text-white'
+                        : 'border-white/10 bg-white/[0.04] text-gray-100 hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    {active && (
+                      <span
+                        className="absolute left-0 top-1/2 h-10 w-1 -translate-y-1/2 rounded-r-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.6)]"
+                        aria-hidden
+                      />
+                    )}
+                    <span className={active ? 'pl-2' : ''}>{label}</span>
+                  </Link>
+                </motion.div>
               );
             })}
           </nav>

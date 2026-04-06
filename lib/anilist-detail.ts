@@ -1,5 +1,6 @@
 // Jikan REST API — detailed anime + shared formatters
 
+import { cache } from 'react';
 import type {
   AnimeDetail,
   Character,
@@ -19,12 +20,50 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function parseRetryAfterMs(response: Response): number | null {
+  const h = response.headers.get('Retry-After');
+  if (!h) return null;
+  const sec = parseInt(h, 10);
+  if (!Number.isNaN(sec)) return sec * 1000;
+  const when = Date.parse(h);
+  if (!Number.isNaN(when)) return Math.max(0, when - Date.now());
+  return null;
+}
+
+const JIKAN_RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
 async function jikanGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${JIKAN_API_URL}${path}`, serverCache);
-  if (!response.ok) {
-    throw new Error(`Jikan API error: ${response.status}`);
+  const url = `${JIKAN_API_URL}${path}`;
+  const maxAttempts = 8;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(url, serverCache);
+    } catch {
+      if (attempt === maxAttempts - 1) {
+        throw new Error('Jikan API error: network');
+      }
+      await sleep(Math.min(20_000, 900 * 2 ** attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      return response.json() as Promise<T>;
+    }
+
+    const status = response.status;
+    const retryable = JIKAN_RETRYABLE.has(status);
+    if (!retryable || attempt === maxAttempts - 1) {
+      throw new Error(`Jikan API error: ${status}`);
+    }
+
+    const fromHeader = parseRetryAfterMs(response);
+    const backoff = fromHeader ?? Math.min(20_000, 900 * 2 ** attempt);
+    await sleep(backoff);
   }
-  return response.json() as Promise<T>;
+
+  throw new Error('Jikan API error: exhausted retries');
 }
 
 interface JikanImages {
@@ -202,17 +241,37 @@ async function fetchCoverForMal(malId: number): Promise<string> {
   return webpLarge(json.data.images);
 }
 
-export async function fetchAnimeDetail(malId: number): Promise<AnimeDetail> {
-  const full = await jikanGet<JikanAnimeById>(`/anime/${malId}/full`);
-  const data = full.data;
+/** Small parallel batches to reduce 429s while avoiding serial sleeps (~3s+ before). */
+const RELATION_COVER_CONCURRENCY = 3;
 
-  await sleep(340);
-  let charJson: JikanCharactersResponse;
-  try {
-    charJson = await jikanGet<JikanCharactersResponse>(`/anime/${malId}/characters`);
-  } catch {
-    charJson = { data: [] };
+async function fetchRelationCoversMap(ids: number[]): Promise<Map<number, string>> {
+  const coverByMal = new Map<number, string>();
+  for (let i = 0; i < ids.length; i += RELATION_COVER_CONCURRENCY) {
+    const batch = ids.slice(i, i + RELATION_COVER_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(async (id) => {
+        const url = await fetchCoverForMal(id);
+        return { id, url };
+      })
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value.url) {
+        coverByMal.set(r.value.id, r.value.url);
+      }
+    }
   }
+  return coverByMal;
+}
+
+async function fetchAnimeDetailUncached(malId: number): Promise<AnimeDetail> {
+  const [full, charResult] = await Promise.all([
+    jikanGet<JikanAnimeById>(`/anime/${malId}/full`),
+    jikanGet<JikanCharactersResponse>(`/anime/${malId}/characters`).catch(
+      (): JikanCharactersResponse => ({ data: [] })
+    ),
+  ]);
+  const data = full.data;
+  const charJson = charResult;
 
   const relationAnimeIds: number[] = [];
   for (const rel of data.relations ?? []) {
@@ -221,17 +280,7 @@ export async function fetchAnimeDetail(malId: number): Promise<AnimeDetail> {
     }
   }
   const uniqueIds = [...new Set(relationAnimeIds)].slice(0, 10);
-  const coverByMal = new Map<number, string>();
-
-  for (const id of uniqueIds) {
-    await sleep(340);
-    try {
-      const url = await fetchCoverForMal(id);
-      if (url) coverByMal.set(id, url);
-    } catch {
-      /* skip */
-    }
-  }
+  const coverByMal = await fetchRelationCoversMap(uniqueIds);
 
   const english =
     data.title_english && data.title_english.trim() !== '' ? data.title_english.trim() : null;
@@ -328,6 +377,11 @@ export async function fetchAnimeDetail(malId: number): Promise<AnimeDetail> {
 
   return detail;
 }
+
+/**
+ * Per-request dedupe: `generateMetadata` and the page both call this; only one Jikan pipeline runs.
+ */
+export const fetchAnimeDetail = cache(fetchAnimeDetailUncached);
 
 export function formatDateJST(date: {
   year: number | null;

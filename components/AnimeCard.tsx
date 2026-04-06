@@ -1,6 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { Anime, getDisplayTitle, getPrimaryStudio, getStatusLabel, getReleaseLabel, formatDateGMT8 } from '@/lib/anilist';
+import { Anime, getPrimaryStudio, getStatusLabel, getReleaseLabel, formatDateGMT8 } from '@/lib/anilist';
+import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -11,7 +14,8 @@ const hoverCopyShadow =
   '[text-shadow:0_1px_12px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)]';
 
 export function AnimeCard({ anime }: AnimeCardProps) {
-  const title = getDisplayTitle(anime);
+  const { titleLanguage } = useTitleLanguage();
+  const title = displayTitleForLanguage(anime.title, titleLanguage);
   const studio = getPrimaryStudio(anime);
   const statusLabel = getStatusLabel(anime.status);
   const releaseLabel = getReleaseLabel(anime.status);

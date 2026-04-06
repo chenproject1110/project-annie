@@ -63,8 +63,12 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   }
 
   let anime;
+  let themes: Awaited<ReturnType<typeof fetchAnimeThemes>>;
   try {
-    anime = await fetchAnimeDetail(malId);
+    [anime, themes] = await Promise.all([
+      fetchAnimeDetail(malId),
+      fetchAnimeThemes(malId),
+    ]);
   } catch {
     notFound();
   }
@@ -84,8 +88,6 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const showBroadcast =
     anime.status === 'RELEASING' && anime.broadcastSchedule && anime.broadcastSchedule.length > 0;
 
-  const themes = await fetchAnimeThemes(anime.mal_id);
-
   const art = heroImageUrl(anime);
   const relationEdges = anime.relations.edges.filter((e) => e.node.coverImage.extraLarge);
 
@@ -100,21 +102,9 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               alt=""
               fill
               sizes="100vw"
-              className="object-cover object-center blur-3xl opacity-40"
+              className="object-cover object-center blur-3xl opacity-60"
               priority
             />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center px-8">
-            <div className="relative h-full w-full max-w-lg md:max-w-2xl">
-              <Image
-                src={art}
-                alt={title}
-                fill
-                sizes="(max-width: 768px) 100vw, 672px"
-                className="object-contain object-center"
-                priority
-              />
-            </div>
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/80 pointer-events-none" />
