@@ -104,9 +104,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               priority
             />
           </div>
-          <div className="absolute -top-20 sm:-top-20 inset-x-0 -bottom-16 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent pointer-events-none" />
-          <div className="absolute -top-20 sm:-top-20 inset-x-0 bottom-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-[#0a0a0a]/80 pointer-events-none" />
-        </div>
+          </div>
 
         <div className="absolute bottom-[10px] left-0 right-0 pb-4 sm:pb-8">
           <div className="mx-auto max-w-7xl px-8">

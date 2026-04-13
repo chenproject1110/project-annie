@@ -161,7 +161,8 @@ function getJSTWeekDayRange(day: DayKey): [number, number] {
   };
 
   const targetMidnight = mondayMidnight + dayFromMonday[day] * 86400;
-  return [targetMidnight, targetMidnight + 86400];
+  // airingAt_greater is strict >, so subtract 1 to include shows airing exactly at midnight JST
+  return [targetMidnight - 1, targetMidnight + 86400];
 }
 
 async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
