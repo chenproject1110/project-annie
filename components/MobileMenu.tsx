@@ -13,6 +13,9 @@ export interface MobileMenuProps {
   onClose: () => void;
   pathname: string;
   links: readonly JapandiNavLink[];
+  userEmail?: string | null;
+  displayName?: string | null;
+  onSignOut?: () => void;
 }
 
 const BACKDROP_EASE = [0.22, 1, 0.36, 1] as const;
@@ -50,7 +53,7 @@ const itemVariants = {
   exit: { opacity: 0, y: 8, transition: { duration: 0.12 } },
 };
 
-export function MobileMenu({ open, onClose, pathname, links }: MobileMenuProps) {
+export function MobileMenu({ open, onClose, pathname, links, userEmail, displayName, onSignOut }: MobileMenuProps) {
   const reduceMotion = useReducedMotion();
 
   const backdropTransition = reduceMotion
@@ -102,22 +105,52 @@ export function MobileMenu({ open, onClose, pathname, links }: MobileMenuProps) 
           <nav className="flex flex-1 flex-col gap-3 px-8 pt-8 pb-6" aria-label="Mobile">
             {/* Profile / sign-in card */}
             <motion.div variants={usedItemVariants}>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-h-[3rem] text-left transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
-                onClick={() => { /* future auth hook */ }}
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M20 21a8 8 0 0 0-16 0" />
-                  </svg>
-                </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="text-sm font-semibold text-white">Sign In</span>
-                  <span className="text-xs text-gray-400">Track &amp; sync your list</span>
-                </span>
-              </button>
+              {userEmail ? (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href="/profile"
+                    onClick={onClose}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-h-[3rem] text-left transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-900 text-white text-sm font-bold">
+                      {(displayName || userEmail).charAt(0).toUpperCase()}
+                    </span>
+                    <span className="flex flex-col leading-tight min-w-0">
+                      <span className="text-sm font-semibold text-white truncate">{displayName || 'My Profile'}</span>
+                      <span className="text-xs text-gray-400 truncate">{userEmail}</span>
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { onSignOut?.(); }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-left text-sm text-gray-400 transition-colors hover:bg-white/[0.08] hover:text-white active:scale-[0.98]"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-h-[3rem] text-left transition-colors hover:bg-white/[0.08] active:scale-[0.98]"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M20 21a8 8 0 0 0-16 0" />
+                    </svg>
+                  </span>
+                  <span className="flex flex-col leading-tight">
+                    <span className="text-sm font-semibold text-white">Sign In</span>
+                    <span className="text-xs text-gray-400">Track &amp; sync your list</span>
+                  </span>
+                </Link>
+              )}
             </motion.div>
 
             {/* Separator */}

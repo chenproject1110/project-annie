@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { Season } from '@/lib/anilist';
+import { type Season, getAnimeSeasonNow } from '@/lib/anilist';
 import { AnimeGridWrapper } from '@/components/AnimeGridWrapper';
 import {
   JapandiBrowseAnimeGrid,
@@ -20,21 +20,12 @@ interface SearchParams {
   season?: string;
 }
 
-function getCurrentSeason(): Season {
-  const month = new Date().getMonth() + 1;
-  if (month >= 1 && month <= 3) return 'WINTER';
-  if (month >= 4 && month <= 6) return 'SPRING';
-  if (month >= 7 && month <= 9) return 'SUMMER';
-  return 'FALL';
-}
-
 function isValidSeason(season: string | undefined): season is Season {
   return season === 'WINTER' || season === 'SPRING' || season === 'SUMMER' || season === 'FALL';
 }
 
 export default async function BrowsePage({ searchParams }: { searchParams: SearchParams }) {
-  const currentYear = new Date().getFullYear();
-  const currentSeason = getCurrentSeason();
+  const { season: currentSeason, year: currentYear } = getAnimeSeasonNow();
 
   const year = searchParams.year ? parseInt(searchParams.year) : currentYear;
   const season = isValidSeason(searchParams.season) ? searchParams.season : currentSeason;

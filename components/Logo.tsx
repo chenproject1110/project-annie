@@ -1,11 +1,10 @@
-// components/logo.tsx
 import React from 'react';
 
-export const Logo = ({ className = "", showText = true }: { className?: string, showText?: boolean }) => {
-  // The primary purple branding color
-  const purplePrimary = "#8B5CF6"; // Tailwind violet-500
-  const purpleDark = "#6D28D9";    // Tailwind violet-700
-  const textColor = "#F3F4F6";     // Tailwind gray-100 (for dark mode)
+const purplePrimary = '#8B5CF6';
+const purpleDark = '#6D28D9';
+const textColor = '#F3F4F6';
+
+export function Logo({ className = '', showText = true }: { className?: string; showText?: boolean }) {
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
@@ -46,6 +45,4 @@ export const Logo = ({ className = "", showText = true }: { className?: string, 
       )}
     </div>
   );
-};
-
-export default Logo;
+}

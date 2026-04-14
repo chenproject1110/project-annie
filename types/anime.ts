@@ -5,11 +5,6 @@ export interface MinimalAnimeTitle {
   native?: string | null;
 }
 
-/** Cover art used by cards and grids. */
-export interface MinimalAnimeCoverImage {
-  extraLarge: string;
-}
-
 /** Shared card/grid shape: AniList id, localized title, cover art (grid + relation cards). */
 export interface MinimalAnime {
   id: number;

@@ -1,12 +1,14 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { AnimatedBurger } from '@/components/AnimatedBurger';
 import { TitleLanguageSwitch } from '@/components/TitleLanguageSwitch';
+import { createClient } from '@/lib/supabase/client';
 import type { JapandiNavLink } from '@/components/MobileMenu';
 
 const MobileMenu = dynamic(
@@ -22,6 +24,43 @@ const links: readonly JapandiNavLink[] = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserEmail(user?.email ?? null);
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }) => {
+            setDisplayName(data?.display_name ?? null);
+          });
+      }
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+      if (!session?.user) setDisplayName(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUserEmail(null);
+    setDisplayName(null);
+    setOpen(false);
+    router.push('/');
+    router.refresh();
+  }, [router]);
 
   useEffect(() => {
     if (!open) return;
@@ -87,6 +126,33 @@ export function Navbar() {
               })}
             </div>
             <TitleLanguageSwitch />
+
+            {userEmail ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/profile"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-900 text-white text-sm font-bold ring-1 ring-white/10 hover:ring-violet-500/50 transition-all"
+                  aria-label="View profile"
+                >
+                  {(displayName || userEmail).charAt(0).toUpperCase()}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="min-h-9 min-w-9 inline-flex items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="min-h-11 px-4 inline-flex items-center justify-center rounded-xl text-sm font-medium text-gray-200 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
 
           {/* Mobile: compact language switcher + burger */}
@@ -111,6 +177,9 @@ export function Navbar() {
         onClose={() => setOpen(false)}
         pathname={pathname}
         links={links}
+        userEmail={userEmail}
+        displayName={displayName}
+        onSignOut={handleSignOut}
       />
     </header>
   );

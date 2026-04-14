@@ -336,7 +336,7 @@ export function formatRelationType(type: string): string {
   return typeMap[type] || type.replace(/_/g, ' ');
 }
 
-export function formatBroadcastSchedule(airingAt: number): string {
+function formatBroadcastSchedule(airingAt: number): string {
   const date = new Date(airingAt * 1000);
 
   const dayFormatter = new Intl.DateTimeFormat('en-US', {
@@ -356,20 +356,3 @@ export function formatBroadcastSchedule(airingAt: number): string {
   return `${dayOfWeek}s at ${time} (JST)`;
 }
 
-export function formatTimeUntilAiring(timeUntilAiring: number, episode: number): string {
-  const seconds = timeUntilAiring;
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  let timeString = '';
-  if (days > 0) {
-    timeString = `${days} day${days > 1 ? 's' : ''}`;
-  } else if (hours > 0) {
-    timeString = `${hours} hour${hours > 1 ? 's' : ''}`;
-  } else {
-    timeString = `${minutes} minute${minutes > 1 ? 's' : ''}`;
-  }
-
-  return `Episode ${episode} in ${timeString}`;
-}

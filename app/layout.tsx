@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { TitleLanguageProvider } from '@/context/TitleLanguageContext';
@@ -30,6 +31,13 @@ export default function RootLayout({
         <TitleLanguageProvider>
           <Navbar />
           {children}
+          <Toaster
+            theme="dark"
+            position="bottom-center"
+            toastOptions={{
+              className: 'border-white/10 bg-white/[0.06] backdrop-blur-md text-white',
+            }}
+          />
         </TitleLanguageProvider>
       </body>
     </html>

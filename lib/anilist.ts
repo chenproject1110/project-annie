@@ -4,7 +4,7 @@ import type { MinimalAnime } from '@/types/anime';
 
 export type Season = 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL';
 export type MediaFormat = 'TV' | 'TV_SHORT' | 'MOVIE' | 'SPECIAL' | 'OVA' | 'ONA' | 'MUSIC';
-export type MediaSource =
+type MediaSource =
   | 'ORIGINAL'
   | 'MANGA'
   | 'LIGHT_NOVEL'
@@ -41,25 +41,25 @@ export interface AnimeTitle {
   native: string | null;
 }
 
-export interface CoverImage {
+interface CoverImage {
   extraLarge: string;
   large?: string | null;
   color?: string | null;
 }
 
-export interface Studio {
+interface Studio {
   nodes: Array<{
     name: string;
   }>;
 }
 
-export interface StartDate {
+interface StartDate {
   year: number | null;
   month: number | null;
   day: number | null;
 }
 
-export type AnimeStatus = 'RELEASING' | 'FINISHED' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
+type AnimeStatus = 'RELEASING' | 'FINISHED' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 
 export interface Anime {
   id: number;
@@ -74,12 +74,12 @@ export interface Anime {
   startDate: StartDate;
 }
 
-export interface CharacterName {
+interface CharacterName {
   full: string;
   native: string | null;
 }
 
-export interface CharacterImage {
+interface CharacterImage {
   large: string;
 }
 
@@ -99,7 +99,7 @@ export interface Character {
   voiceActors: VoiceActor[];
 }
 
-export interface RelationNode {
+interface RelationNode {
   id: number;
   title: AnimeTitle;
   coverImage: CoverImage;
@@ -111,18 +111,18 @@ export interface Relation {
   node: RelationNode;
 }
 
-export interface ExternalLink {
+interface ExternalLink {
   site: string;
   url: string;
   icon: string | null;
 }
 
-export interface StudioNode {
+interface StudioNode {
   name: string;
   isAnimationStudio: boolean;
 }
 
-export interface NextAiringEpisode {
+interface NextAiringEpisode {
   airingAt: number;
   timeUntilAiring: number;
   episode: number;
@@ -291,7 +291,7 @@ function mapMedia(m: AniListMediaItem): Anime {
 /*  Public fetchers                                                    */
 /* ------------------------------------------------------------------ */
 
-export interface FetchAnimeParams {
+interface FetchAnimeParams {
   season?: Season;
   year?: number;
   search?: string;
@@ -345,11 +345,8 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
     page++;
   }
 
-  console.log(`Fetched ${all.length} anime for ${params.season} ${params.year}`);
   return all;
 }
-
-export type TrendingHeroAnime = Anime;
 
 export async function fetchTrendingByPopularity(limit: number = 8): Promise<TrendingHeroAnime[]> {
   const data = await anilistQuery<AniListPageResponse>(

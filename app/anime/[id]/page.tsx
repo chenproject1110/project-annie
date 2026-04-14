@@ -14,6 +14,8 @@ import { getStatusLabel, stripHtml } from '@/lib/anilist';
 import { fetchAnimeThemes, formatThemeString } from '@/lib/jikan';
 import { CharacterCard } from '@/components/CharacterCard';
 import { RelationCard } from '@/components/RelationCard';
+import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
+import { createClient } from '@/lib/supabase/server';
 
 interface PageProps {
   params: {
@@ -89,6 +91,19 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const art = heroImageUrl(anime);
   const relationEdges = anime.relations.edges.filter((e) => e.node.coverImage.extraLarge);
 
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let currentTrackingStatus: TrackingStatus | null = null;
+  if (user) {
+    const { data: tracking } = await supabase
+      .from('anime_tracking')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('anime_id', id)
+      .single();
+    if (tracking) currentTrackingStatus = tracking.status as TrackingStatus;
+  }
+
   return (
     <main className="relative z-0 min-h-screen bg-[#0a0a0a] -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
       {/* Double-layer hero (global): blurred backdrop + sharp contain — no MAL banner asset */}
@@ -161,6 +176,15 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 priority
               />
             </div>
+
+            <AnimeTrackingButtons
+              animeId={anime.id}
+              animeTitle={anime.title.english || anime.title.romaji}
+              animeTitleRomaji={anime.title.romaji}
+              coverImageUrl={anime.coverImage.extraLarge}
+              initialStatus={currentTrackingStatus}
+              isAuthenticated={!!user}
+            />
 
             {filteredLinks.length > 0 && (
               <div className="space-y-2 sm:space-y-3">

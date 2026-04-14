@@ -6,9 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
-import type { AnimeTitle } from '@/lib/anilist';
-
-const ANILIST_API = 'https://graphql.anilist.co';
+import { anilistQuery, type AnimeTitle } from '@/lib/anilist';
 
 const DAYS = [
   'monday',
@@ -165,6 +163,13 @@ function getJSTWeekDayRange(day: DayKey): [number, number] {
   return [targetMidnight - 1, targetMidnight + 86400];
 }
 
+interface AniListSchedulePageResponse {
+  Page: {
+    pageInfo: { hasNextPage: boolean };
+    airingSchedules: AniListAiringEntry[];
+  };
+}
+
 async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
   const [start, end] = getJSTWeekDayRange(day);
 
@@ -173,22 +178,12 @@ async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
   let hasNext = true;
 
   while (hasNext && page <= 3) {
-    const res = await fetch(ANILIST_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        query: SCHEDULE_QUERY,
-        variables: { page, perPage: 50, start, end },
-      }),
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (json.errors?.length) throw new Error(json.errors[0].message);
-
-    const data = json.data.Page;
-    entries.push(...(data.airingSchedules || []));
-    hasNext = data.pageInfo.hasNextPage;
+    const data = await anilistQuery<AniListSchedulePageResponse>(
+      SCHEDULE_QUERY,
+      { page, perPage: 50, start, end },
+    );
+    entries.push(...(data.Page.airingSchedules || []));
+    hasNext = data.Page.pageInfo.hasNextPage;
     page++;
   }
 
