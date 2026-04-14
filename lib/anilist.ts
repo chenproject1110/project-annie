@@ -348,7 +348,7 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
   return all;
 }
 
-export async function fetchTrendingByPopularity(limit: number = 8): Promise<TrendingHeroAnime[]> {
+export async function fetchTrendingByPopularity(limit: number = 8): Promise<Anime[]> {
   const data = await anilistQuery<AniListPageResponse>(
     `query ($perPage: Int) {
       Page(page: 1, perPage: $perPage) {
