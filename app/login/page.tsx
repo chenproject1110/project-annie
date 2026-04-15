@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Lock, Mail } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 const SPRING = { type: 'spring', stiffness: 300, damping: 28 } as const;
 const REDUCED = { duration: 0.15 } as const;
@@ -44,6 +44,11 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
 
+    if (!isSupabaseConfigured()) {
+      toast.error('Authentication is not available');
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 

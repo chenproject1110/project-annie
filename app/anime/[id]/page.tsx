@@ -15,7 +15,7 @@ import { fetchAnimeThemes, formatThemeString } from '@/lib/jikan';
 import { CharacterCard } from '@/components/CharacterCard';
 import { RelationCard } from '@/components/RelationCard';
 import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 interface PageProps {
   params: {
@@ -91,17 +91,21 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const art = heroImageUrl(anime);
   const relationEdges = anime.relations.edges.filter((e) => e.node.coverImage.extraLarge);
 
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
   let currentTrackingStatus: TrackingStatus | null = null;
-  if (user) {
-    const { data: tracking } = await supabase
-      .from('anime_tracking')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('anime_id', id)
-      .single();
-    if (tracking) currentTrackingStatus = tracking.status as TrackingStatus;
+  if (isSupabaseConfigured()) {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+    if (user) {
+      const { data: tracking } = await supabase
+        .from('anime_tracking')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('anime_id', id)
+        .single();
+      if (tracking) currentTrackingStatus = tracking.status as TrackingStatus;
+    }
   }
 
   return (

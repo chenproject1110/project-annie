@@ -8,7 +8,7 @@ import { LogOut } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { AnimatedBurger } from '@/components/AnimatedBurger';
 import { TitleLanguageSwitch } from '@/components/TitleLanguageSwitch';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import type { JapandiNavLink } from '@/components/MobileMenu';
 
 const MobileMenu = dynamic(
@@ -29,6 +29,7 @@ export function Navbar() {
   const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUserEmail(user?.email ?? null);
@@ -53,6 +54,7 @@ export function Navbar() {
   }, []);
 
   const handleSignOut = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
     const supabase = createClient();
     await supabase.auth.signOut();
     setUserEmail(null);
