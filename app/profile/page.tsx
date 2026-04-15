@@ -6,6 +6,8 @@ import { anilistQuery } from '@/lib/anilist';
 import { ProfileDisplayNameEditor } from '@/components/ProfileDisplayNameEditor';
 import { TrackedAnimeCard } from '@/components/TrackedAnimeCard';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'My Profile - PROJECT ANNIE',
 };
