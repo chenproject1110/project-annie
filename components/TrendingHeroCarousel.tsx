@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { type Anime, getPrimaryStudio, getStatusLabel } from '@/lib/anilist';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
+import { useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
 import {
   JapandiShowAllLink,
   JapandiSectionShowAllMobile,
@@ -41,6 +42,7 @@ function TrendingCard({
   const studio = getPrimaryStudio(anime);
   const statusLabel = getStatusLabel(anime.status);
   const src = cardImageUrl(anime);
+  const trackingStatus = useTrackingStatus(anime.id);
 
   return (
     <motion.div
@@ -96,6 +98,16 @@ function TrendingCard({
 
           {/* Bottom gradient + copy */}
           <div className="absolute inset-x-0 bottom-0 z-[2] rounded-b-2xl bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-16 px-4 pb-10 md:px-5 md:pb-4">
+            {trackingStatus && (() => {
+              const badge = TRACKING_BADGE[trackingStatus];
+              const BadgeIcon = badge.icon;
+              return (
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 mb-2 rounded-md backdrop-blur-md border text-[10px] md:text-xs font-semibold text-white ${badge.bg} ${badge.border}`}>
+                  <BadgeIcon className="w-3 h-3" strokeWidth={2.5} />
+                  {badge.label}
+                </div>
+              );
+            })()}
             <h3
               className={`text-base md:text-lg font-bold text-white line-clamp-2 leading-snug ${copyShadow}`}
             >

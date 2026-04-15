@@ -26,7 +26,7 @@ export function TrackedAnimeCard({
   return (
     <Link
       href={`/anime/${animeId}`}
-      className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer"
+      className="group flex flex-col rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer"
     >
       <div className="relative w-full aspect-[2/3] overflow-hidden">
         {coverImageUrl ? (
@@ -43,7 +43,7 @@ export function TrackedAnimeCard({
           </div>
         )}
       </div>
-      <div className="p-2 sm:p-3">
+      <div className="p-2 sm:p-3 h-[60px] flex items-center">
         <p className="text-xs sm:text-sm font-medium text-white line-clamp-2 leading-tight">
           {displayTitle}
         </p>

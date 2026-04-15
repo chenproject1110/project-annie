@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { Play, CheckCircle, Bookmark, XCircle, Pause } from 'lucide-react';
+import { Play, CheckCircle, Bookmark, XCircle, Pause, ArrowUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { anilistQuery } from '@/lib/anilist';
 import { ProfileDisplayNameEditor } from '@/components/ProfileDisplayNameEditor';
@@ -136,8 +136,8 @@ export default async function ProfilePage() {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <main className="relative z-0 min-h-screen bg-[#0a0a0a] pb-16">
-      <div className="mx-auto max-w-4xl px-8 pt-12 sm:pt-16">
+    <main id="profile-top" className="relative z-0 min-h-screen bg-[#0a0a0a] pb-16 scroll-mt-20">
+      <div className="mx-auto max-w-4xl px-4 sm:px-8 pt-12 sm:pt-16">
         {/* Avatar */}
         <div className="flex justify-center mb-4">
           <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-900 shadow-[0_0_24px_rgba(139,92,246,0.3)] ring-2 ring-white/10">
@@ -152,53 +152,50 @@ export default async function ProfilePage() {
 
         <p className="mb-8 text-center text-sm text-gray-500">{user.email}</p>
 
-        {/* Stats Cards */}
+        {/* Stats Cards — clickable anchors */}
         <div className="mb-10 flex gap-3 overflow-x-auto scrollbar-hide pb-2">
           {STATUS_ORDER.map((status) => {
             const meta = STATUS_META[status];
             const Icon = meta.icon;
             const count = grouped[status].length;
             return (
-              <div
+              <a
                 key={status}
-                className={`flex shrink-0 items-center gap-2.5 rounded-xl border px-4 py-3 backdrop-blur-md ${meta.bg} ${meta.border}`}
+                href={`#section-${status}`}
+                className={`flex shrink-0 items-center gap-2.5 rounded-xl border px-4 py-3 backdrop-blur-md transition-all hover:brightness-125 ${meta.bg} ${meta.border}`}
               >
                 <Icon className={`h-4 w-4 ${meta.color}`} />
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-400">{meta.label}</span>
                   <span className="text-sm font-semibold text-white">{count}</span>
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>
 
-        {/* Anime Rows by Status */}
+        {/* Anime Grid by Status */}
         {STATUS_ORDER.map((status) => {
           const items = grouped[status];
           if (items.length === 0) return null;
           const meta = STATUS_META[status];
 
           return (
-            <section key={status} className="mb-10">
+            <section key={status} id={`section-${status}`} className="mb-10 scroll-mt-6">
               <h2 className="mb-4 text-lg font-bold text-white sm:text-xl">
                 {status === 'watching' ? 'Currently Watching' : meta.label}
               </h2>
-              <div className="flex flex-nowrap gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth pb-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                 {items.map((row) => {
                   const info = animeMap.get(row.anime_id);
                   return (
-                    <div
+                    <TrackedAnimeCard
                       key={row.anime_id}
-                      className="w-[42vw] max-w-[168px] shrink-0 snap-start"
-                    >
-                      <TrackedAnimeCard
-                        animeId={row.anime_id}
-                        animeTitle={info?.title.english ?? null}
-                        animeTitleRomaji={info?.title.romaji ?? null}
-                        coverImageUrl={info?.coverImage.large ?? null}
-                      />
-                    </div>
+                      animeId={row.anime_id}
+                      animeTitle={info?.title.english ?? null}
+                      animeTitleRomaji={info?.title.romaji ?? null}
+                      coverImageUrl={info?.coverImage.large ?? null}
+                    />
                   );
                 })}
               </div>
@@ -215,6 +212,15 @@ export default async function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Go to Top */}
+      <a
+        href="#profile-top"
+        className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all hover:bg-violet-500 hover:scale-110 active:scale-95"
+        aria-label="Go to top"
+      >
+        <ArrowUp className="h-5 w-5" />
+      </a>
     </main>
   );
 }

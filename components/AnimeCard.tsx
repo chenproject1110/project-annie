@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Anime, getPrimaryStudio, getStatusLabel, getReleaseLabel, formatDateGMT8 } from '@/lib/anilist';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
+import { useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -20,6 +21,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
   const statusLabel = getStatusLabel(anime.status);
   const releaseLabel = getReleaseLabel(anime.status);
   const formattedDate = formatDateGMT8(anime.startDate);
+  const trackingStatus = useTrackingStatus(anime.id);
 
   return (
     <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
@@ -41,6 +43,16 @@ export function AnimeCard({ anime }: AnimeCardProps) {
             aria-hidden
           />
           <div className="relative flex h-full min-h-0 min-w-0 flex-col items-stretch justify-end gap-2 lg:gap-3 p-3 lg:p-5">
+            {trackingStatus && (() => {
+              const badge = TRACKING_BADGE[trackingStatus];
+              const BadgeIcon = badge.icon;
+              return (
+                <div className={`self-start flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-[10px] lg:text-xs font-semibold text-white ${badge.bg} ${badge.border}`}>
+                  <BadgeIcon className="w-3 h-3" strokeWidth={2.5} />
+                  {badge.label}
+                </div>
+              );
+            })()}
             <h3
               className={`shrink-0 text-base lg:text-xl font-bold text-white line-clamp-3 leading-tight break-words ${hoverCopyShadow}`}
             >
@@ -80,6 +92,18 @@ export function AnimeCard({ anime }: AnimeCardProps) {
           </div>
         </div>
         
+        {/* Mobile tracking badge — always visible */}
+        {trackingStatus && (() => {
+          const badge = TRACKING_BADGE[trackingStatus];
+          const BadgeIcon = badge.icon;
+          return (
+            <div className={`md:hidden absolute bottom-[59px] sm:bottom-[56px] left-2 z-[2] flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}>
+              <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+              {badge.label}
+            </div>
+          );
+        })()}
+
         {/* Mobile: one layer — gradient meets image with no gap above card edge */}
         <div className="md:hidden absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
           <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">

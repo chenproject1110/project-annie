@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { TitleLanguageProvider } from '@/context/TitleLanguageContext';
+import { TrackingProvider } from '@/context/TrackingContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-[#0a0a0a] text-white antialiased`}>
         <TitleLanguageProvider>
+        <TrackingProvider>
           <Navbar />
           {children}
           <Toaster
@@ -38,6 +40,7 @@ export default function RootLayout({
               className: 'border-white/10 bg-white/[0.06] backdrop-blur-md text-white',
             }}
           />
+        </TrackingProvider>
         </TitleLanguageProvider>
       </body>
     </html>

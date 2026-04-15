@@ -26,11 +26,11 @@ const panelVariants = {
     x: 0,
     transition: {
       type: 'spring' as const,
-      stiffness: 340,
+      stiffness: 500,
       damping: 32,
-      mass: 0.8,
+      mass: 0.5,
       when: 'beforeChildren',
-      staggerChildren: 0.06,
+      staggerChildren: 0.03,
     },
   },
   exit: {

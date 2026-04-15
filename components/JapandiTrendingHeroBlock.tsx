@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
 import { anilistQuery, type AnimeTitle } from '@/lib/anilist';
+import { useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
 
 const DAYS = [
   'monday',
@@ -241,6 +242,7 @@ function ScheduleCard({
   index: number;
   isLive: boolean;
 }) {
+  const trackingStatus = useTrackingStatus(anime.id);
   const { titleLanguage } = useTitleLanguage();
   const title = displayTitleForLanguage(anime.title, titleLanguage);
 
@@ -317,6 +319,16 @@ function ScheduleCard({
               aria-hidden
             />
             <div className="relative flex h-full min-h-0 min-w-0 flex-col justify-end gap-2 lg:gap-3 p-3 lg:p-5">
+              {trackingStatus && (() => {
+                const badge = TRACKING_BADGE[trackingStatus];
+                const BadgeIcon = badge.icon;
+                return (
+                  <div className={`self-start flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-[10px] lg:text-xs font-semibold text-white ${badge.bg} ${badge.border}`}>
+                    <BadgeIcon className="w-3 h-3" strokeWidth={2.5} />
+                    {badge.label}
+                  </div>
+                );
+              })()}
               <h3
                 className={`text-base lg:text-xl font-bold text-white line-clamp-3 leading-tight break-words ${hoverShadow}`}
               >
@@ -355,6 +367,18 @@ function ScheduleCard({
               )}
             </div>
           </div>
+
+          {/* Mobile tracking badge — always visible */}
+          {trackingStatus && (() => {
+            const badge = TRACKING_BADGE[trackingStatus];
+            const BadgeIcon = badge.icon;
+            return (
+              <div className={`md:hidden absolute bottom-[59px] sm:bottom-[56px] left-2 z-[2] flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}>
+                <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+                {badge.label}
+              </div>
+            );
+          })()}
 
           {/* Mobile bottom bar */}
           <div className="md:hidden absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
