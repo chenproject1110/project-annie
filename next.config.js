@@ -52,8 +52,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    // Keep visited routes warm in the client router cache so back/forward and
+    // re-taps feel instant instead of refetching every time.
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
+      static: 180,
     },
   },
   images: {
