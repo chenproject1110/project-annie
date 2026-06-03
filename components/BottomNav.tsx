@@ -27,6 +27,13 @@ const BASE_TABS: Tab[] = [
 export function BottomNav() {
   const pathname = usePathname();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // Optimistic highlight: light the tapped tab immediately, before the route resolves.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Clear the optimistic highlight once navigation actually lands.
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -54,11 +61,13 @@ export function BottomNav() {
     >
       <ul className="flex items-stretch">
         {tabs.map(({ href, label, icon: Icon, isActive }) => {
-          const active = isActive(pathname);
+          // Pending tap wins so the tab reacts instantly; otherwise use the real route.
+          const active = pendingHref ? pendingHref === href : isActive(pathname);
           return (
             <li key={label} className="flex-1">
               <Link
                 href={href}
+                onClick={() => setPendingHref(href)}
                 aria-current={active ? 'page' : undefined}
                 className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors active:scale-95 ${
                   active ? 'text-violet-400' : 'text-gray-400 hover:text-white'

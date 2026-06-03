@@ -5,6 +5,8 @@ import { AnimeCard } from '@/components/AnimeCard';
 export interface JapandiBrowseAnimeGridProps {
   year: number;
   season: Season;
+  genres?: string[];
+  formats?: string[];
 }
 
 export function JapandiBrowseGridSkeleton() {
@@ -34,16 +36,26 @@ export function JapandiBrowseGridSkeleton() {
   );
 }
 
-export async function JapandiBrowseAnimeGrid({ year, season }: JapandiBrowseAnimeGridProps) {
+export async function JapandiBrowseAnimeGrid({
+  year,
+  season,
+  genres,
+  formats,
+}: JapandiBrowseAnimeGridProps) {
   try {
-    const animeList = await fetchAnime({ season, year });
+    const animeList = await fetchAnime({ season, year, genres, formats });
 
     if (!animeList || animeList.length === 0) {
+      const filtered = (genres && genres.length > 0) || (formats && formats.length > 0);
       return (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <Film className="w-16 h-16 mb-4 opacity-50" />
-          <p className="text-xl font-medium">No anime found for this season</p>
-          <p className="text-sm mt-2">Try selecting a different year or season</p>
+          <p className="text-xl font-medium">No anime found</p>
+          <p className="text-sm mt-2">
+            {filtered
+              ? 'Try loosening your filters, or a different season.'
+              : 'Try selecting a different year or season'}
+          </p>
         </div>
       );
     }

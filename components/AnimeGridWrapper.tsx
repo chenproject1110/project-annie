@@ -3,6 +3,7 @@
 import { Season } from '@/lib/anilist';
 import { SeasonFilter } from './SeasonFilter';
 import { SearchBar } from './SearchBar';
+import { BrowseFilters } from './BrowseFilters';
 
 interface AnimeGridWrapperProps {
   currentYear: number;
@@ -22,6 +23,11 @@ export function AnimeGridWrapper({ currentYear, currentSeason, focusSearch = fal
         {/* Row 2: Search Bar - Always Visible */}
         <div className="mt-3 sm:mt-4">
           <SearchBar isOpen={true} autoFocus={focusSearch} />
+        </div>
+
+        {/* Row 3: Genre / format filters */}
+        <div className="mt-3 sm:mt-4">
+          <BrowseFilters />
         </div>
       </div>
 

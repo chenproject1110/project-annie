@@ -19,6 +19,8 @@ interface SearchParams {
   year?: string;
   season?: string;
   focus?: string;
+  genres?: string;
+  formats?: string;
 }
 
 function isValidSeason(season: string | undefined): season is Season {
@@ -32,6 +34,9 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
   const season = isValidSeason(searchParams.season) ? searchParams.season : currentSeason;
 
   const validYear = year >= 2013 && year <= currentYear + 1 ? year : currentYear;
+
+  const genres = searchParams.genres ? searchParams.genres.split(',').filter(Boolean) : [];
+  const formats = searchParams.formats ? searchParams.formats.split(',').filter(Boolean) : [];
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
@@ -56,10 +61,15 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
           </div>
 
           <Suspense
-            key={`${validYear}-${season}`}
+            key={`${validYear}-${season}-${genres.join(',')}-${formats.join(',')}`}
             fallback={<JapandiBrowseGridSkeleton />}
           >
-            <JapandiBrowseAnimeGrid year={validYear} season={season} />
+            <JapandiBrowseAnimeGrid
+              year={validYear}
+              season={season}
+              genres={genres}
+              formats={formats}
+            />
           </Suspense>
         </AnimeGridWrapper>
       </div>

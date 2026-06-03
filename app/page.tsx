@@ -1,16 +1,10 @@
 import { Metadata } from 'next';
-import {
-  fetchSeasonUpcomingAnime,
-  fetchTrendingByPopularity,
-  getAnimeSeasonNow,
-  getNextSeason,
-  type Anime,
-} from '@/lib/anilist';
+import { Suspense } from 'react';
 import { WeeklyAiringSchedule } from '@/components/JapandiTrendingHeroBlock';
-import { TrendingCarousel } from '@/components/TrendingHeroCarousel';
-import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
 import { ContinueWatchingRail } from '@/components/ContinueWatchingRail';
 import { RecommendationsRail } from '@/components/RecommendationsRail';
+import { HomeTrending } from '@/components/HomeTrending';
+import { HomeComingNext } from '@/components/HomeComingNext';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
@@ -18,43 +12,44 @@ export const metadata: Metadata = {
     'Discover trending anime, now airing, and upcoming seasons. Powered by AniList.',
 };
 
-export default async function HomePage() {
-  let upcoming: Anime[] = [];
-  let trending: Anime[] = [];
-  const { season: nowSeason, year: nowYear } = getAnimeSeasonNow();
-  const nextBlock = getNextSeason(nowSeason, nowYear);
+function TrendingSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-8 pb-8 sm:pb-12">
+      <div className="h-[240px] sm:h-[340px] md:h-[400px] w-full rounded-2xl bg-white/[0.04] border border-white/5 animate-pulse" />
+    </div>
+  );
+}
 
-  try {
-    [upcoming, trending] = await Promise.all([
-      fetchSeasonUpcomingAnime(6),
-      fetchTrendingByPopularity(8),
-    ]);
-  } catch {
-    // Sections below still render
-  }
+function RowSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-8 pb-12 sm:pb-20">
+      <div className="h-8 w-48 rounded-lg bg-white/10 animate-pulse mb-5" />
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="aspect-[2/3] rounded-xl bg-white/5 animate-pulse" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
+// Synchronous shell → paints instantly; data-dependent sections stream in.
+export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
       <WeeklyAiringSchedule />
 
       <ContinueWatchingRail />
 
-      {trending.length > 0 && (
-        <TrendingCarousel items={trending} />
-      )}
+      <Suspense fallback={<TrendingSkeleton />}>
+        <HomeTrending />
+      </Suspense>
 
       <RecommendationsRail />
 
-      <JapandiAnimeRowSection
-        sectionId="coming-next-heading"
-        title="Coming next"
-        subtitle="Upcoming season lineup"
-        showAllHref={`/browse?year=${nextBlock.year}&season=${nextBlock.season}`}
-        showAllLabel="Show all"
-        items={upcoming}
-        emptyMessage="No listings available for this season yet."
-        bottomSpacingClassName="pb-12 sm:pb-20"
-      />
+      <Suspense fallback={<RowSkeleton />}>
+        <HomeComingNext />
+      </Suspense>
 
       <footer className="border-t border-white/10">
         <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">

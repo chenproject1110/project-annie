@@ -296,6 +296,8 @@ interface FetchAnimeParams {
   season?: Season;
   year?: number;
   search?: string;
+  genres?: string[];
+  formats?: string[];
 }
 
 export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
@@ -326,21 +328,51 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
 
   if (params.season == null || params.year == null) return [];
 
+  const genres = (params.genres ?? []).filter(Boolean);
+  const formats = (params.formats ?? []).filter(Boolean);
+
+  const varDefs = ['$season: MediaSeason', '$year: Int', '$page: Int', '$perPage: Int'];
+  const mediaArgs = [
+    'season: $season',
+    'seasonYear: $year',
+    'sort: POPULARITY_DESC',
+    'type: ANIME',
+    'isAdult: false',
+  ];
+  const baseVars: Record<string, unknown> = { season: params.season, year: params.year };
+
+  if (genres.length > 0) {
+    varDefs.push('$genres: [String]');
+    mediaArgs.push('genre_in: $genres');
+    baseVars.genres = genres;
+  }
+  if (formats.length > 0) {
+    varDefs.push('$formats: [MediaFormat]');
+    mediaArgs.push('format_in: $formats');
+    baseVars.formats = formats;
+  } else {
+    // Default: hide shorts/ONAs unless the user explicitly asks for them.
+    mediaArgs.push('format_not_in: [ONA, TV_SHORT]');
+  }
+
+  const query = `query (${varDefs.join(', ')}) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
+      media(${mediaArgs.join(', ')}) {
+        ${ANIME_LIST_FIELDS}
+      }
+    }
+  }`;
+
   const all: Anime[] = [];
   let page = 1;
   let hasNext = true;
   while (hasNext && page <= 20) {
-    const data = await anilistQuery<AniListPageResponse>(
-      `query ($season: MediaSeason, $year: Int, $page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-          pageInfo { hasNextPage }
-          media(season: $season, seasonYear: $year, sort: POPULARITY_DESC, type: ANIME, isAdult: false, format_not_in: [ONA, TV_SHORT]) {
-            ${ANIME_LIST_FIELDS}
-          }
-        }
-      }`,
-      { season: params.season, year: params.year, page, perPage },
-    );
+    const data = await anilistQuery<AniListPageResponse>(query, {
+      ...baseVars,
+      page,
+      perPage,
+    });
     all.push(...data.Page.media.map(mapMedia));
     hasNext = data.Page.pageInfo.hasNextPage;
     page++;

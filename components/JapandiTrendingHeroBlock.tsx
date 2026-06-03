@@ -312,17 +312,22 @@ function ScheduleCard({
           {/* Time + episode badges (top-right, stacked) */}
           <div className="absolute top-2 right-2 z-[3] flex flex-col items-end gap-1">
             <div
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-xs font-semibold ${
+              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 backdrop-blur-md shadow-sm ring-1 ${
                 isLive
-                  ? 'bg-violet-500/25 border-violet-400/40 text-violet-200'
-                  : 'bg-white/10 border-white/10 text-white/90'
+                  ? 'bg-violet-600/90 ring-violet-300/50 text-white'
+                  : 'bg-black/75 ring-white/15 text-white'
               }`}
             >
-              <Clock className="w-3 h-3" strokeWidth={2.5} />
-              {timeLabel}
+              <Clock
+                className={`h-3.5 w-3.5 ${isLive ? 'text-violet-100' : 'text-violet-300'}`}
+                strokeWidth={2.5}
+              />
+              <span className="text-[13px] font-bold tabular-nums tracking-tight leading-none">
+                {timeLabel}
+              </span>
             </div>
             {anime.episode > 0 && (
-              <div className="px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/90">
+              <div className="rounded-lg bg-black/75 px-2 py-0.5 backdrop-blur-md ring-1 ring-white/15 text-[10px] font-bold tabular-nums text-white/90">
                 EP {anime.episode}
               </div>
             )}
