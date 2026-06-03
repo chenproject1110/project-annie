@@ -84,6 +84,7 @@ interface CharacterImage {
 }
 
 export interface VoiceActor {
+  id: number;
   name: CharacterName;
   image: CharacterImage;
   language: string;
@@ -363,6 +364,86 @@ export async function fetchTrendingByPopularity(limit: number = 8): Promise<Anim
   return data.Page.media.map(mapMedia);
 }
 
+/** Popular shows currently airing (no season filter) — used as a discovery fallback. */
+export async function fetchAiringPopular(limit: number = 12): Promise<Anime[]> {
+  const data = await anilistQuery<AniListPageResponse>(
+    `query ($perPage: Int) {
+      Page(page: 1, perPage: $perPage) {
+        pageInfo { hasNextPage }
+        media(sort: POPULARITY_DESC, type: ANIME, isAdult: false, status: RELEASING, format_not_in: [ONA, TV_SHORT]) {
+          ${ANIME_LIST_FIELDS}
+        }
+      }
+    }`,
+    { perPage: limit },
+  );
+  return data.Page.media.map(mapMedia);
+}
+
+interface AniListRecsResponse {
+  Page: {
+    media: Array<{
+      id: number;
+      recommendations: {
+        nodes: Array<{ rating: number | null; mediaRecommendation: AniListMediaItem | null }>;
+      } | null;
+    }>;
+  };
+}
+
+/**
+ * Aggregate AniList recommendations across a set of source titles (e.g. the
+ * user's tracked list), ranked by summed recommendation rating, excluding
+ * anything already in the source set. No score/rating is shown — pure "if you
+ * liked these" discovery.
+ */
+export async function fetchRecommendationsForIds(
+  ids: number[],
+  limit: number = 12,
+): Promise<Anime[]> {
+  if (ids.length === 0) return [];
+  const sample = ids.slice(0, 12); // cap source breadth to keep the query light
+  try {
+    const data = await anilistQuery<AniListRecsResponse>(
+      `query ($ids: [Int]) {
+        Page(page: 1, perPage: 50) {
+          media(id_in: $ids, type: ANIME) {
+            id
+            recommendations(sort: RATING_DESC, perPage: 8) {
+              nodes {
+                rating
+                mediaRecommendation { ${ANIME_LIST_FIELDS} }
+              }
+            }
+          }
+        }
+      }`,
+      { ids: sample },
+    );
+
+    const score = new Map<number, number>();
+    const media = new Map<number, AniListMediaItem>();
+    for (const m of data.Page.media) {
+      for (const node of m.recommendations?.nodes ?? []) {
+        const rec = node.mediaRecommendation;
+        if (!rec) continue;
+        score.set(rec.id, (score.get(rec.id) ?? 0) + (node.rating ?? 1));
+        media.set(rec.id, rec);
+      }
+    }
+
+    const exclude = new Set(ids);
+    return [...media.values()]
+      .filter((m) => !exclude.has(m.id))
+      .sort((a, b) => (score.get(b.id) ?? 0) - (score.get(a.id) ?? 0))
+      .slice(0, limit)
+      .map(mapMedia);
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    return [];
+  }
+}
+
 export async function fetchSeasonNowAnime(limit: number = 6): Promise<Anime[]> {
   const { season, year } = getAnimeSeasonNow();
   const data = await anilistQuery<AniListPageResponse>(
@@ -444,6 +525,31 @@ interface AniListSuggestionResponse {
       startDate: { year: number | null };
     }>;
   };
+}
+
+/**
+ * Full search results (for the /search page). Uses AniList's `search:` argument
+ * with SEARCH_MATCH sorting, which already does partial/fuzzy substring matching.
+ */
+export async function searchAnime(searchTerm: string, perPage: number = 30): Promise<Anime[]> {
+  if (!searchTerm.trim()) return [];
+  try {
+    const data = await anilistQuery<AniListPageResponse>(
+      `query ($search: String, $perPage: Int) {
+        Page(page: 1, perPage: $perPage) {
+          pageInfo { hasNextPage }
+          media(search: $search, sort: SEARCH_MATCH, type: ANIME, isAdult: false) {
+            ${ANIME_LIST_FIELDS}
+          }
+        }
+      }`,
+      { search: searchTerm.trim(), perPage },
+    );
+    return data.Page.media.map(mapMedia);
+  } catch (error) {
+    console.error('Error searching anime:', error);
+    return [];
+  }
 }
 
 export async function fetchSearchSuggestions(

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
 import { anilistQuery, type AnimeTitle } from '@/lib/anilist';
-import { useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
+import { useTracking, useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
 
 const DAYS = [
   'monday',
@@ -31,7 +31,29 @@ const DAY_LABELS: Record<DayKey, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  JST helpers                                                        */
+/*  Timezone handling                                                  */
+/* ------------------------------------------------------------------ */
+
+type TzMode = 'JST' | 'LOCAL' | 'GMT8';
+const TZ_STORAGE_KEY = 'annie_schedule_tz';
+const TZ_LABELS: Record<TzMode, string> = { JST: 'JST', LOCAL: 'Local', GMT8: 'GMT+8' };
+const TZ_ZONES: Record<TzMode, string | undefined> = {
+  JST: 'Asia/Tokyo',
+  LOCAL: undefined, // runtime local zone
+  GMT8: 'Asia/Singapore',
+};
+
+function formatTime(airingAt: number, mode: TzMode): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: TZ_ZONES[mode],
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(airingAt * 1000));
+}
+
+/* ------------------------------------------------------------------ */
+/*  JST schedule helpers (day grouping stays by Japanese broadcast day) */
 /* ------------------------------------------------------------------ */
 
 function getCurrentJSTDay(): DayKey {
@@ -41,35 +63,23 @@ function getCurrentJSTDay(): DayKey {
   })
     .format(new Date())
     .toLowerCase();
-  return (DAYS as readonly string[]).includes(name)
-    ? (name as DayKey)
-    : 'monday';
+  return (DAYS as readonly string[]).includes(name) ? (name as DayKey) : 'monday';
 }
 
-function getJSTHourMinute(): [number, number] {
-  const parts = new Intl.DateTimeFormat('en-GB', {
+function jstWeekdayOf(airingAt: number): DayKey {
+  const name = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date());
-  return [
-    parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10),
-    parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10),
-  ];
+    weekday: 'long',
+  })
+    .format(new Date(airingAt * 1000))
+    .toLowerCase();
+  return (DAYS as readonly string[]).includes(name) ? (name as DayKey) : 'monday';
 }
 
-function checkAiringNow(
-  broadcastTime: string | null,
-  selectedDay: DayKey,
-): boolean {
-  if (!broadcastTime) return false;
-  if (getCurrentJSTDay() !== selectedDay) return false;
-  const [h, m] = getJSTHourMinute();
-  const [bh, bm] = broadcastTime.split(':').map(Number);
-  const now = h * 60 + m;
-  const air = bh * 60 + bm;
-  return now >= air && now - air <= 30;
+/** Live = a real episode just aired within the last 30 min (timezone-independent). */
+function isLiveNow(airingAt: number): boolean {
+  const now = Math.floor(Date.now() / 1000);
+  return now >= airingAt && now - airingAt <= 30 * 60;
 }
 
 /* ------------------------------------------------------------------ */
@@ -80,7 +90,8 @@ interface ScheduleAnime {
   id: number;
   title: AnimeTitle;
   coverImage: string;
-  broadcastTime: string | null;
+  airingAt: number;
+  episode: number;
   episodes: number | null;
   genres: string[];
   studio: string;
@@ -124,15 +135,6 @@ interface AniListAiringEntry {
     status: string;
     isAdult: boolean;
   };
-}
-
-function formatJSTTime(airingAt: number): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Tokyo',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(airingAt * 1000));
 }
 
 /** Compute the UTC unix-second range for a given day-of-week in the current JST week. */
@@ -179,10 +181,12 @@ async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
   let hasNext = true;
 
   while (hasNext && page <= 3) {
-    const data = await anilistQuery<AniListSchedulePageResponse>(
-      SCHEDULE_QUERY,
-      { page, perPage: 50, start, end },
-    );
+    const data = await anilistQuery<AniListSchedulePageResponse>(SCHEDULE_QUERY, {
+      page,
+      perPage: 50,
+      start,
+      end,
+    });
     entries.push(...(data.Page.airingSchedules || []));
     hasNext = data.Page.pageInfo.hasNextPage;
     page++;
@@ -202,59 +206,89 @@ async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
         romaji: entry.media.title.romaji || 'Untitled',
         native: entry.media.title.native || null,
       },
-      coverImage:
-        entry.media.coverImage.extraLarge ||
-        entry.media.coverImage.large ||
-        '',
-      broadcastTime: formatJSTTime(entry.airingAt),
+      coverImage: entry.media.coverImage.extraLarge || entry.media.coverImage.large || '',
+      airingAt: entry.airingAt,
+      episode: entry.episode,
       episodes: entry.media.episodes,
       genres: entry.media.genres || [],
       studio: entry.media.studios?.nodes?.[0]?.name || '',
-      status:
-        entry.media.status === 'NOT_YET_RELEASED' ? 'upcoming' : 'airing',
+      status: entry.media.status === 'NOT_YET_RELEASED' ? 'upcoming' : 'airing',
     });
   }
 
-  const result = [...seen.values()];
-  result.sort((a, b) => {
-    if (!a.broadcastTime && !b.broadcastTime) return 0;
-    if (!a.broadcastTime) return 1;
-    if (!b.broadcastTime) return -1;
-    return a.broadcastTime.localeCompare(b.broadcastTime);
-  });
+  return [...seen.values()].sort((a, b) => a.airingAt - b.airingAt);
+}
 
-  return result;
+/* ------------------------------------------------------------------ */
+/*  Per-day counts for the user's tracked shows                        */
+/* ------------------------------------------------------------------ */
+
+interface TrackedAiringResponse {
+  Page: { media: Array<{ id: number; nextAiringEpisode: { airingAt: number } | null }> };
+}
+
+const EMPTY_COUNTS: Record<DayKey, number> = {
+  monday: 0,
+  tuesday: 0,
+  wednesday: 0,
+  thursday: 0,
+  friday: 0,
+  saturday: 0,
+  sunday: 0,
+};
+
+async function fetchTrackedAiringCounts(ids: number[]): Promise<Record<DayKey, number>> {
+  const counts: Record<DayKey, number> = { ...EMPTY_COUNTS };
+  if (ids.length === 0) return counts;
+  try {
+    const data = await anilistQuery<TrackedAiringResponse>(
+      `query ($ids: [Int]) {
+        Page(page: 1, perPage: 50) {
+          media(id_in: $ids, type: ANIME, status: RELEASING) {
+            id
+            nextAiringEpisode { airingAt }
+          }
+        }
+      }`,
+      { ids: ids.slice(0, 50) },
+    );
+    for (const m of data.Page.media) {
+      if (!m.nextAiringEpisode) continue;
+      counts[jstWeekdayOf(m.nextAiringEpisode.airingAt)] += 1;
+    }
+  } catch {
+    // counts stay zeroed — badges simply won't show
+  }
+  return counts;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Schedule card                                                      */
 /* ------------------------------------------------------------------ */
 
-const hoverShadow =
-  '[text-shadow:0_1px_12px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)]';
+const hoverShadow = '[text-shadow:0_1px_12px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,1)]';
 
 function ScheduleCard({
   anime,
   index,
   isLive,
+  tzMode,
 }: {
   anime: ScheduleAnime;
   index: number;
   isLive: boolean;
+  tzMode: TzMode;
 }) {
   const trackingStatus = useTrackingStatus(anime.id);
   const { titleLanguage } = useTitleLanguage();
   const title = displayTitleForLanguage(anime.title, titleLanguage);
+  const timeLabel = formatTime(anime.airingAt, tzMode);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.45,
-        delay: index * 0.04,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      transition={{ duration: 0.45, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
     >
       <Link
         href={`/anime/${anime.id}`}
@@ -275,19 +309,24 @@ function ScheduleCard({
             />
           )}
 
-          {/* Time badge */}
-          {anime.broadcastTime && (
+          {/* Time + episode badges (top-right, stacked) */}
+          <div className="absolute top-2 right-2 z-[3] flex flex-col items-end gap-1">
             <div
-              className={`absolute top-2 right-2 z-[3] flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-xs font-semibold ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-xs font-semibold ${
                 isLive
                   ? 'bg-violet-500/25 border-violet-400/40 text-violet-200'
                   : 'bg-white/10 border-white/10 text-white/90'
               }`}
             >
               <Clock className="w-3 h-3" strokeWidth={2.5} />
-              {anime.broadcastTime}
+              {timeLabel}
             </div>
-          )}
+            {anime.episode > 0 && (
+              <div className="px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/90">
+                EP {anime.episode}
+              </div>
+            )}
+          </div>
 
           {/* Live pulse */}
           {isLive && (
@@ -319,16 +358,19 @@ function ScheduleCard({
               aria-hidden
             />
             <div className="relative flex h-full min-h-0 min-w-0 flex-col justify-end gap-2 lg:gap-3 p-3 lg:p-5">
-              {trackingStatus && (() => {
-                const badge = TRACKING_BADGE[trackingStatus];
-                const BadgeIcon = badge.icon;
-                return (
-                  <div className={`self-start flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-[10px] lg:text-xs font-semibold text-white ${badge.bg} ${badge.border}`}>
-                    <BadgeIcon className="w-3 h-3" strokeWidth={2.5} />
-                    {badge.label}
-                  </div>
-                );
-              })()}
+              {trackingStatus &&
+                (() => {
+                  const badge = TRACKING_BADGE[trackingStatus];
+                  const BadgeIcon = badge.icon;
+                  return (
+                    <div
+                      className={`self-start flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border text-[10px] lg:text-xs font-semibold text-white ${badge.bg} ${badge.border}`}
+                    >
+                      <BadgeIcon className="w-3 h-3" strokeWidth={2.5} />
+                      {badge.label}
+                    </div>
+                  );
+                })()}
               <h3
                 className={`text-base lg:text-xl font-bold text-white line-clamp-3 leading-tight break-words ${hoverShadow}`}
               >
@@ -346,13 +388,9 @@ function ScheduleCard({
                   </>
                 )}
               </p>
-              {anime.broadcastTime && (
-                <p
-                  className={`text-[11px] lg:text-xs text-white/70 ${hoverShadow}`}
-                >
-                  Airs at {anime.broadcastTime} JST
-                </p>
-              )}
+              <p className={`text-[11px] lg:text-xs text-white/70 ${hoverShadow}`}>
+                Episode {anime.episode} · {timeLabel} {TZ_LABELS[tzMode]}
+              </p>
               {anime.genres.length > 0 && (
                 <div className="flex min-w-0 shrink-0 flex-wrap gap-1 lg:gap-1.5">
                   {anime.genres.slice(0, 3).map((g) => (
@@ -370,17 +408,19 @@ function ScheduleCard({
 
           {/* Mobile bottom bar */}
           <div className="md:hidden absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
-            {/* Tracking badge sits directly on top of the title, regardless of title line count */}
-            {trackingStatus && (() => {
-              const badge = TRACKING_BADGE[trackingStatus];
-              const BadgeIcon = badge.icon;
-              return (
-                <div className={`mb-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}>
-                  <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
-                  {badge.label}
-                </div>
-              );
-            })()}
+            {trackingStatus &&
+              (() => {
+                const badge = TRACKING_BADGE[trackingStatus];
+                const BadgeIcon = badge.icon;
+                return (
+                  <div
+                    className={`mb-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}
+                  >
+                    <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+                    {badge.label}
+                  </div>
+                );
+              })()}
             <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">
               {title}
             </h3>
@@ -392,9 +432,7 @@ function ScheduleCard({
 
           {/* Desktop resting bar */}
           <div className="hidden md:block absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-3 pt-12 pb-2.5 group-hover:opacity-0 transition-opacity duration-300">
-            <h3 className="text-sm font-semibold text-white line-clamp-2">
-              {title}
-            </h3>
+            <h3 className="text-sm font-semibold text-white line-clamp-2">{title}</h3>
           </div>
         </div>
       </Link>
@@ -407,13 +445,38 @@ function ScheduleCard({
 /* ------------------------------------------------------------------ */
 
 export function WeeklyAiringSchedule() {
+  const { trackingMap } = useTracking();
   const [selectedDay, setSelectedDay] = useState<DayKey>('monday');
   const [schedule, setSchedule] = useState<ScheduleAnime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [tick, setTick] = useState(0);
+  const [tzMode, setTzMode] = useState<TzMode>('JST');
+  const [followingOnly, setFollowingOnly] = useState(false);
+  const [trackedCounts, setTrackedCounts] = useState<Record<DayKey, number>>(EMPTY_COUNTS);
   const cache = useRef<Partial<Record<DayKey, ScheduleAnime[]>>>({});
   const selectorRef = useRef<HTMLDivElement>(null);
+
+  const trackedIds = useMemo(
+    () => Object.keys(trackingMap).map(Number),
+    [trackingMap],
+  );
+  const hasTracked = trackedIds.length > 0;
+
+  // Restore timezone preference.
+  useEffect(() => {
+    const stored = localStorage.getItem(TZ_STORAGE_KEY) as TzMode | null;
+    if (stored && stored in TZ_LABELS) setTzMode(stored);
+  }, []);
+
+  const changeTz = useCallback((mode: TzMode) => {
+    setTzMode(mode);
+    try {
+      localStorage.setItem(TZ_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     setSelectedDay(getCurrentJSTDay());
@@ -423,6 +486,21 @@ export function WeeklyAiringSchedule() {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
   }, []);
+
+  // Per-day counts of the user's tracked shows.
+  useEffect(() => {
+    if (!hasTracked) {
+      setTrackedCounts(EMPTY_COUNTS);
+      return;
+    }
+    let cancelled = false;
+    fetchTrackedAiringCounts(trackedIds).then((c) => {
+      if (!cancelled) setTrackedCounts(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [trackedIds, hasTracked]);
 
   useEffect(() => {
     const cached = cache.current[selectedDay];
@@ -457,14 +535,8 @@ export function WeeklyAiringSchedule() {
 
   const scrollActiveIntoView = useCallback((day: DayKey) => {
     if (!selectorRef.current) return;
-    const btn = selectorRef.current.querySelector(
-      `[data-day="${day}"]`,
-    ) as HTMLElement | null;
-    btn?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
+    const btn = selectorRef.current.querySelector(`[data-day="${day}"]`) as HTMLElement | null;
+    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, []);
 
   useEffect(() => {
@@ -474,18 +546,56 @@ export function WeeklyAiringSchedule() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const jstDay = useMemo(() => getCurrentJSTDay(), [tick]);
 
+  const visible = useMemo(
+    () => (followingOnly ? schedule.filter((a) => trackingMap[a.id] != null) : schedule),
+    [followingOnly, schedule, trackingMap],
+  );
+
   return (
-    <section
-      className="mx-auto max-w-7xl px-8 pt-2 pb-8 sm:pb-12"
-      aria-label="Weekly airing schedule"
-    >
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
-          Weekly airing schedule
-        </h1>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">
-          Broadcast times in JST
-        </p>
+    <section className="mx-auto max-w-7xl px-8 pt-2 pb-8 sm:pb-12" aria-label="Weekly airing schedule">
+      <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+            Weekly airing schedule
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base mt-1">
+            Times shown in {TZ_LABELS[tzMode]}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {hasTracked && (
+            <button
+              type="button"
+              onClick={() => setFollowingOnly((v) => !v)}
+              aria-pressed={followingOnly}
+              className={`min-h-9 rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors active:scale-95 ${
+                followingOnly
+                  ? 'bg-violet-600 border-violet-400/50 text-white'
+                  : 'bg-white/[0.04] border-white/10 text-gray-300 hover:text-white'
+              }`}
+            >
+              Following only
+            </button>
+          )}
+
+          {/* Timezone segmented control */}
+          <div className="flex items-center rounded-full bg-white/[0.04] border border-white/10 p-0.5">
+            {(Object.keys(TZ_LABELS) as TzMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => changeTz(mode)}
+                aria-pressed={tzMode === mode}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                  tzMode === mode ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {TZ_LABELS[mode]}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Day selector */}
@@ -498,6 +608,7 @@ export function WeeklyAiringSchedule() {
         {DAYS.map((day) => {
           const active = day === selectedDay;
           const isToday = day === jstDay;
+          const count = trackedCounts[day];
           return (
             <button
               key={day}
@@ -513,20 +624,27 @@ export function WeeklyAiringSchedule() {
                 <motion.div
                   layoutId="schedule-day-pill"
                   className="absolute inset-0 rounded-full bg-violet-600/90 shadow-lg shadow-violet-500/25"
-                  transition={{
-                    type: 'spring',
-                    bounce: 0.2,
-                    duration: 0.5,
-                  }}
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                 />
               )}
+              {/* Selected day: corner badge pinned to the top-right */}
+              {active && hasTracked && count > 0 && (
+                <span className="absolute -top-1 -right-1 z-[2] inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold bg-white text-violet-700 shadow ring-2 ring-[#0a0a0a]">
+                  {count}
+                </span>
+              )}
               <span className="relative z-[1] flex flex-col items-center gap-0.5">
-                <span>{DAY_LABELS[day]}</span>
+                <span className="flex items-center gap-1">
+                  {DAY_LABELS[day]}
+                  {!active && hasTracked && count > 0 && (
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold bg-violet-500/30 text-violet-200">
+                      {count}
+                    </span>
+                  )}
+                </span>
                 {isToday && (
                   <span
-                    className={`w-1 h-1 rounded-full ${
-                      active ? 'bg-white' : 'bg-violet-400'
-                    }`}
+                    className={`w-1 h-1 rounded-full ${active ? 'bg-white' : 'bg-violet-400'}`}
                   />
                 )}
               </span>
@@ -562,30 +680,33 @@ export function WeeklyAiringSchedule() {
           >
             Could not load schedule. Please try again later.
           </motion.div>
-        ) : schedule.length === 0 ? (
+        ) : visible.length === 0 ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="rounded-2xl border border-white/10 bg-white/5 px-6 py-16 text-center text-gray-400"
           >
-            No anime scheduled for this day.
+            {followingOnly
+              ? 'None of your tracked shows air on this day.'
+              : 'No anime scheduled for this day.'}
           </motion.div>
         ) : (
           <motion.div
-            key={selectedDay}
+            key={`${selectedDay}-${followingOnly ? 'f' : 'a'}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6"
           >
-            {schedule.map((anime, i) => (
+            {visible.map((anime, i) => (
               <ScheduleCard
                 key={anime.id}
                 anime={anime}
                 index={i}
-                isLive={anime.status === 'airing' && checkAiringNow(anime.broadcastTime, selectedDay)}
+                tzMode={tzMode}
+                isLive={isLive(anime)}
               />
             ))}
           </motion.div>
@@ -593,4 +714,8 @@ export function WeeklyAiringSchedule() {
       </AnimatePresence>
     </section>
   );
+}
+
+function isLive(anime: ScheduleAnime): boolean {
+  return anime.status === 'airing' && isLiveNow(anime.airingAt);
 }

@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Character } from '@/lib/anilist';
 
 interface CharacterCardProps {
@@ -37,10 +38,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
           </div>
         </div>
 
-        {/* Voice Actor Side */}
+        {/* Voice Actor Side — links to the VA page */}
         {va && (
-          <div className="flex flex-col items-center p-4 border-l border-gray-700">
-            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600 bg-gray-700">
+          <Link
+            href={`/staff/${va.id}`}
+            className="group/va flex flex-col items-center p-4 border-l border-gray-700 transition-colors hover:bg-gray-750 active:scale-95"
+            aria-label={`View voice actor ${va.name.full}`}
+          >
+            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600 group-hover/va:ring-violet-500/60 bg-gray-700 transition-all">
               {va.image.large ? (
                 <Image
                   src={va.image.large}
@@ -53,7 +58,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-400 mb-1">CV</p>
-              <p className="text-sm font-semibold text-gray-200 mb-1 line-clamp-2">
+              <p className="text-sm font-semibold text-gray-200 group-hover/va:text-white mb-1 line-clamp-2 transition-colors">
                 {va.name.full}
               </p>
               {va.name.native && (
@@ -62,7 +67,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                 </p>
               )}
             </div>
-          </div>
+          </Link>
         )}
       </div>
     </div>

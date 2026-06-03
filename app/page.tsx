@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import {
-  fetchSeasonNowAnime,
   fetchSeasonUpcomingAnime,
   fetchTrendingByPopularity,
   getAnimeSeasonNow,
@@ -11,6 +10,7 @@ import { WeeklyAiringSchedule } from '@/components/JapandiTrendingHeroBlock';
 import { TrendingCarousel } from '@/components/TrendingHeroCarousel';
 import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
 import { ContinueWatchingRail } from '@/components/ContinueWatchingRail';
+import { RecommendationsRail } from '@/components/RecommendationsRail';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
@@ -19,15 +19,13 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  let nowAiring: Anime[] = [];
   let upcoming: Anime[] = [];
   let trending: Anime[] = [];
   const { season: nowSeason, year: nowYear } = getAnimeSeasonNow();
   const nextBlock = getNextSeason(nowSeason, nowYear);
 
   try {
-    [nowAiring, upcoming, trending] = await Promise.all([
-      fetchSeasonNowAnime(6),
+    [upcoming, trending] = await Promise.all([
       fetchSeasonUpcomingAnime(6),
       fetchTrendingByPopularity(8),
     ]);
@@ -45,15 +43,7 @@ export default async function HomePage() {
         <TrendingCarousel items={trending} />
       )}
 
-      <JapandiAnimeRowSection
-        sectionId="now-airing-heading"
-        title="Now airing"
-        subtitle="Current season"
-        showAllHref={`/browse?year=${nowYear}&season=${nowSeason}`}
-        showAllLabel="Show all"
-        items={nowAiring}
-        emptyMessage="No listings available for this season yet."
-      />
+      <RecommendationsRail />
 
       <JapandiAnimeRowSection
         sectionId="coming-next-heading"

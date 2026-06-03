@@ -166,6 +166,7 @@ async function fetchAnimeDetailUncached(id: number): Promise<AnimeDetail> {
     const voiceActors: VoiceActor[] = va
       ? [
           {
+            id: va.id,
             name: { full: va.name.full, native: va.name.native },
             image: { large: va.image?.large || '' },
             language: 'Japanese',

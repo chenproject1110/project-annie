@@ -17,11 +17,10 @@ const BASE_TABS: Tab[] = [
   { href: '/', label: 'Home', icon: Home, isActive: (p) => p === '/' },
   { href: '/browse', label: 'Browse', icon: Compass, isActive: (p) => p.startsWith('/browse') },
   {
-    href: '/browse?focus=search',
+    href: '/search',
     label: 'Search',
     icon: Search,
-    // "Search" is an action, never the persistent active tab.
-    isActive: () => false,
+    isActive: (p) => p.startsWith('/search'),
   },
 ];
 

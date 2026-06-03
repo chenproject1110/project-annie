@@ -17,6 +17,7 @@ import { RelationCard } from '@/components/RelationCard';
 import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
 import { EpisodeProgress } from '@/components/EpisodeProgress';
 import { ThemeSongs, ThemeSongsSkeleton } from '@/components/ThemeSongs';
+import { AnimeRecommendations } from '@/components/AnimeRecommendations';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 interface PageProps {
@@ -392,6 +393,10 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 </div>
               </div>
             )}
+
+            <Suspense fallback={null}>
+              <AnimeRecommendations animeId={anime.id} />
+            </Suspense>
           </div>
         </div>
       </div>

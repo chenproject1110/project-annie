@@ -9,11 +9,12 @@ import { SearchSuggestions } from './SearchSuggestions';
 interface SearchBarProps {
   isOpen: boolean;
   autoFocus?: boolean;
+  defaultValue?: string;
 }
 
-export function SearchBar({ isOpen, autoFocus = false }: SearchBarProps) {
+export function SearchBar({ isOpen, autoFocus = false, defaultValue = '' }: SearchBarProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,23 +62,14 @@ export function SearchBar({ isOpen, autoFocus = false }: SearchBarProps) {
     setShowSuggestions(false);
   };
 
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     const q = searchTerm.trim();
     if (!q) return;
     e.preventDefault();
-
-    let list = suggestions;
-    if (list.length === 0) {
-      list = await fetchSearchSuggestions(q);
-      setSuggestions(list);
-    }
-
-    if (list.length > 0) {
-      router.push(`/anime/${list[0].id}`);
-      setShowSuggestions(false);
-      setSearchTerm('');
-    }
+    // Show the full results list rather than jumping to the top hit.
+    setShowSuggestions(false);
+    router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
   if (!isOpen) return null;
