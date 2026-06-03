@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
+const validStatuses = ['watching', 'completed', 'planning', 'dropped', 'paused'];
+
 export async function POST(request: Request) {
   try {
     const supabase = createClient();
@@ -14,13 +16,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { animeId, status } = body;
+    const { animeId, status, progress, totalEpisodes } = body;
 
     if (!animeId || typeof animeId !== 'number') {
       return NextResponse.json({ error: 'Invalid animeId' }, { status: 400 });
     }
 
-    if (status === null) {
+    const hasStatus = 'status' in body;
+    const hasProgress = progress !== undefined && progress !== null;
+
+    // Explicit removal: { animeId, status: null }
+    if (hasStatus && status === null) {
       const { error } = await supabase
         .from('anime_tracking')
         .delete()
@@ -34,22 +40,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ deleted: true });
     }
 
-    const validStatuses = ['watching', 'completed', 'planning', 'dropped', 'paused'];
-    if (!validStatuses.includes(status)) {
+    if (hasStatus && !validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+
+    if (hasProgress && (!Number.isInteger(progress) || progress < 0)) {
+      return NextResponse.json({ error: 'Invalid progress' }, { status: 400 });
+    }
+
+    if (!hasStatus && !hasProgress) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    }
+
+    // Build only the columns we were actually given so a progress-only update
+    // doesn't clobber status, and vice versa.
+    const payload: Record<string, unknown> = {
+      user_id: user.id,
+      anime_id: animeId,
+      updated_at: new Date().toISOString(),
+    };
+    if (hasStatus) payload.status = status;
+    if (hasProgress) payload.progress = progress;
+    if (typeof totalEpisodes === 'number' && totalEpisodes > 0) {
+      payload.total_episodes = totalEpisodes;
     }
 
     const { data, error } = await supabase
       .from('anime_tracking')
-      .upsert(
-        {
-          user_id: user.id,
-          anime_id: animeId,
-          status,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,anime_id' }
-      )
+      .upsert(payload, { onConflict: 'user_id,anime_id' })
       .select()
       .single();
 

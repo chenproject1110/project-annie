@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
+import { BottomNav } from '@/components/BottomNav';
 import { TitleLanguageProvider } from '@/context/TitleLanguageContext';
 import { TrackingProvider } from '@/context/TrackingContext';
 
@@ -33,6 +34,9 @@ export default function RootLayout({
         <TrackingProvider>
           <Navbar />
           {children}
+          {/* Spacer so fixed bottom nav never covers page content on mobile */}
+          <div className="h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] sm:hidden" aria-hidden />
+          <BottomNav />
           <Toaster
             theme="dark"
             position="bottom-center"

@@ -8,14 +8,24 @@ import { SearchSuggestions } from './SearchSuggestions';
 
 interface SearchBarProps {
   isOpen: boolean;
+  autoFocus?: boolean;
 }
 
-export function SearchBar({ isOpen }: SearchBarProps) {
+export function SearchBar({ isOpen, autoFocus = false }: SearchBarProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus + reveal the field when arriving via the bottom-nav "Search" tab.
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [autoFocus]);
 
   // Fetch suggestions (debounced) - Local state only
   useEffect(() => {
@@ -103,6 +113,7 @@ export function SearchBar({ isOpen }: SearchBarProps) {
 
         {/* Input stacks below icons so backdrop/blur does not paint over the magnifier */}
         <input
+          ref={inputRef}
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

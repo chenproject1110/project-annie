@@ -10,6 +10,7 @@ import {
 import { WeeklyAiringSchedule } from '@/components/JapandiTrendingHeroBlock';
 import { TrendingCarousel } from '@/components/TrendingHeroCarousel';
 import { JapandiAnimeRowSection } from '@/components/JapandiAnimeRowSection';
+import { ContinueWatchingRail } from '@/components/ContinueWatchingRail';
 
 export const metadata: Metadata = {
   title: 'PROJECT ANNIE — Anime Discovery',
@@ -37,6 +38,8 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
       <WeeklyAiringSchedule />
+
+      <ContinueWatchingRail />
 
       {trending.length > 0 && (
         <TrendingCarousel items={trending} />

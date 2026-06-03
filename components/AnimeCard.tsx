@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Anime, getPrimaryStudio, getStatusLabel, getReleaseLabel, formatDateGMT8 } from '@/lib/anilist';
 import { displayTitleForLanguage, useTitleLanguage } from '@/context/TitleLanguageContext';
-import { useTrackingStatus, TRACKING_BADGE } from '@/context/TrackingContext';
+import { useTrackingStatus, useTrackingProgress, TRACKING_BADGE } from '@/context/TrackingContext';
+import { CoverProgressBar } from '@/components/CoverProgressBar';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -22,6 +23,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
   const releaseLabel = getReleaseLabel(anime.status);
   const formattedDate = formatDateGMT8(anime.startDate);
   const trackingStatus = useTrackingStatus(anime.id);
+  const trackingProgress = useTrackingProgress(anime.id);
 
   return (
     <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
@@ -92,20 +94,19 @@ export function AnimeCard({ anime }: AnimeCardProps) {
           </div>
         </div>
         
-        {/* Mobile tracking badge — always visible */}
-        {trackingStatus && (() => {
-          const badge = TRACKING_BADGE[trackingStatus];
-          const BadgeIcon = badge.icon;
-          return (
-            <div className={`md:hidden absolute bottom-[59px] sm:bottom-[56px] left-2 z-[2] flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}>
-              <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
-              {badge.label}
-            </div>
-          );
-        })()}
-
         {/* Mobile: one layer — gradient meets image with no gap above card edge */}
-        <div className="md:hidden absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
+        <div className="md:hidden absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-black via-black/80 to-transparent px-2.5 sm:px-3 pt-12 pb-1.5 sm:pb-2">
+          {/* Tracking badge sits directly on top of the title, regardless of title line count */}
+          {trackingStatus && (() => {
+            const badge = TRACKING_BADGE[trackingStatus];
+            const BadgeIcon = badge.icon;
+            return (
+              <div className={`mb-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-md border text-[9px] sm:text-[10px] font-semibold text-white ${badge.bg} ${badge.border}`}>
+                <BadgeIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+                {badge.label}
+              </div>
+            );
+          })()}
           <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">
             {title}
           </h3>
@@ -120,6 +121,13 @@ export function AnimeCard({ anime }: AnimeCardProps) {
             {title}
           </h3>
         </div>
+
+        {trackingProgress && (
+          <CoverProgressBar
+            progress={trackingProgress.progress}
+            total={trackingProgress.total}
+          />
+        )}
       </div>
     </Link>
   );

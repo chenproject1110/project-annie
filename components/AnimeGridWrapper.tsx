@@ -7,10 +7,11 @@ import { SearchBar } from './SearchBar';
 interface AnimeGridWrapperProps {
   currentYear: number;
   currentSeason: Season;
+  focusSearch?: boolean;
   children: React.ReactNode;
 }
 
-export function AnimeGridWrapper({ currentYear, currentSeason, children }: AnimeGridWrapperProps) {
+export function AnimeGridWrapper({ currentYear, currentSeason, focusSearch = false, children }: AnimeGridWrapperProps) {
   return (
     <>
       {/* Filters Container */}
@@ -20,7 +21,7 @@ export function AnimeGridWrapper({ currentYear, currentSeason, children }: Anime
 
         {/* Row 2: Search Bar - Always Visible */}
         <div className="mt-3 sm:mt-4">
-          <SearchBar isOpen={true} />
+          <SearchBar isOpen={true} autoFocus={focusSearch} />
         </div>
       </div>
 

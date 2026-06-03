@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTitleLanguage } from '@/context/TitleLanguageContext';
+import { useTrackingProgress } from '@/context/TrackingContext';
+import { CoverProgressBar } from '@/components/CoverProgressBar';
 
 interface TrackedAnimeCardProps {
   animeId: number;
@@ -18,6 +20,7 @@ export function TrackedAnimeCard({
   coverImageUrl,
 }: TrackedAnimeCardProps) {
   const { titleLanguage } = useTitleLanguage();
+  const trackingProgress = useTrackingProgress(animeId);
   const displayTitle =
     titleLanguage === 'romaji'
       ? animeTitleRomaji || animeTitle || 'Unknown'
@@ -41,6 +44,12 @@ export function TrackedAnimeCard({
           <div className="h-full w-full bg-gray-700 flex items-center justify-center">
             <span className="text-gray-500 text-xs">No Image</span>
           </div>
+        )}
+        {trackingProgress && (
+          <CoverProgressBar
+            progress={trackingProgress.progress}
+            total={trackingProgress.total}
+          />
         )}
       </div>
       <div className="p-2 sm:p-3 h-[60px] flex items-center">

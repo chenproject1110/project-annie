@@ -2,7 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { ArrowLeft, ExternalLink, Calendar, Tv, Clock, Play, Radio, Music } from 'lucide-react';
+import { Suspense } from 'react';
+import { ArrowLeft, ExternalLink, Calendar, Tv, Clock, Play, Radio } from 'lucide-react';
 import {
   fetchAnimeDetail,
   formatDateJST,
@@ -11,10 +12,11 @@ import {
   formatMediaSource,
 } from '@/lib/anilist-detail';
 import { getStatusLabel, stripHtml } from '@/lib/anilist';
-import { fetchAnimeThemes } from '@/lib/jikan';
 import { CharacterCard } from '@/components/CharacterCard';
 import { RelationCard } from '@/components/RelationCard';
 import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
+import { EpisodeProgress } from '@/components/EpisodeProgress';
+import { ThemeSongs, ThemeSongsSkeleton } from '@/components/ThemeSongs';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 interface PageProps {
@@ -65,10 +67,8 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   }
 
   let anime;
-  let themes: Awaited<ReturnType<typeof fetchAnimeThemes>>;
   try {
     anime = await fetchAnimeDetail(id);
-    themes = await fetchAnimeThemes(anime.idMal);
   } catch {
     notFound();
   }
@@ -93,6 +93,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
   let user = null;
   let currentTrackingStatus: TrackingStatus | null = null;
+  let currentProgress = 0;
   if (isSupabaseConfigured()) {
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
@@ -100,13 +101,18 @@ export default async function AnimeDetailPage({ params }: PageProps) {
     if (user) {
       const { data: tracking } = await supabase
         .from('anime_tracking')
-        .select('status')
+        .select('status, progress')
         .eq('user_id', user.id)
         .eq('anime_id', id)
         .single();
-      if (tracking) currentTrackingStatus = tracking.status as TrackingStatus;
+      if (tracking) {
+        currentTrackingStatus = tracking.status as TrackingStatus;
+        currentProgress = tracking.progress ?? 0;
+      }
     }
   }
+
+  const totalEpisodes = anime.episodes != null && anime.episodes > 0 ? anime.episodes : null;
 
   return (
     <main className="relative z-0 min-h-screen bg-[#0a0a0a] -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
@@ -189,6 +195,16 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               initialStatus={currentTrackingStatus}
               isAuthenticated={!!user}
             />
+
+            {user && anime.format !== 'MOVIE' && (
+              <EpisodeProgress
+                animeId={anime.id}
+                totalEpisodes={totalEpisodes}
+                initialProgress={currentProgress}
+                initialStatus={currentTrackingStatus}
+                isAuthenticated={!!user}
+              />
+            )}
 
             {filteredLinks.length > 0 && (
               <div className="space-y-2 sm:space-y-3">
@@ -347,62 +363,9 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {themes && (themes.openings.length > 0 || themes.endings.length > 0) && (
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Theme Songs</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  {themes.openings.length > 0 && (
-                    <div className="p-4 sm:p-5 bg-gray-800 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Music className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 flex-shrink-0" />
-                        <p className="text-sm font-semibold text-violet-400 uppercase tracking-wide">
-                          Opening{themes.openings.length > 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <ul className="space-y-2.5">
-                        {themes.openings.map((op) => (
-                          <li key={op.slug} className="text-sm leading-relaxed">
-                            <span className="text-violet-300 font-medium mr-1.5">{op.slug}.</span>
-                            <span className="text-gray-100">&ldquo;{op.songTitle}&rdquo;</span>
-                            {op.artists.length > 0 && (
-                              <span className="text-gray-400"> by {op.artists.join(', ')}</span>
-                            )}
-                            {op.episodes && (
-                              <span className="text-gray-500 text-xs ml-1.5">(ep. {op.episodes})</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {themes.endings.length > 0 && (
-                    <div className="p-4 sm:p-5 bg-gray-800 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Music className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 flex-shrink-0" />
-                        <p className="text-sm font-semibold text-violet-400 uppercase tracking-wide">
-                          Ending{themes.endings.length > 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <ul className="space-y-2.5">
-                        {themes.endings.map((ed) => (
-                          <li key={ed.slug} className="text-sm leading-relaxed">
-                            <span className="text-violet-300 font-medium mr-1.5">{ed.slug}.</span>
-                            <span className="text-gray-100">&ldquo;{ed.songTitle}&rdquo;</span>
-                            {ed.artists.length > 0 && (
-                              <span className="text-gray-400"> by {ed.artists.join(', ')}</span>
-                            )}
-                            {ed.episodes && (
-                              <span className="text-gray-500 text-xs ml-1.5">(ep. {ed.episodes})</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <Suspense fallback={<ThemeSongsSkeleton />}>
+              <ThemeSongs idMal={anime.idMal} />
+            </Suspense>
 
             {relationEdges.length > 0 && (
               <div>

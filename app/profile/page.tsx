@@ -216,7 +216,7 @@ export default async function ProfilePage() {
       {/* Go to Top */}
       <a
         href="#profile-top"
-        className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all hover:bg-violet-500 hover:scale-110 active:scale-95"
+        className="fixed bottom-20 right-6 sm:bottom-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all hover:bg-violet-500 hover:scale-110 active:scale-95"
         aria-label="Go to top"
       >
         <ArrowUp className="h-5 w-5" />

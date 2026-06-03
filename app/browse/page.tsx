@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 interface SearchParams {
   year?: string;
   season?: string;
+  focus?: string;
 }
 
 function isValidSeason(season: string | undefined): season is Season {
@@ -42,7 +43,11 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
           </p>
         </div>
 
-        <AnimeGridWrapper currentYear={validYear} currentSeason={season}>
+        <AnimeGridWrapper
+          currentYear={validYear}
+          currentSeason={season}
+          focusSearch={searchParams.focus === 'search'}
+        >
           <div className="mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-white">
               {season.charAt(0) + season.slice(1).toLowerCase()} {validYear}
