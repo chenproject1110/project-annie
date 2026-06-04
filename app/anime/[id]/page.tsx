@@ -16,6 +16,7 @@ import { CharacterCard } from '@/components/CharacterCard';
 import { RelationCard } from '@/components/RelationCard';
 import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
 import { EpisodeProgress } from '@/components/EpisodeProgress';
+import { EntryExtras } from '@/components/EntryExtras';
 import { ThemeSongs, ThemeSongsSkeleton } from '@/components/ThemeSongs';
 import { AnimeRecommendations } from '@/components/AnimeRecommendations';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
@@ -78,7 +79,9 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const description = stripHtml(anime.description);
 
   const animationStudio = anime.studios.nodes.find((s) => s.isAnimationStudio);
-  const mainStudio = animationStudio?.name || anime.studios.nodes[0]?.name || 'Unknown';
+  const mainStudioNode = animationStudio || anime.studios.nodes[0];
+  const mainStudio = mainStudioNode?.name || 'Unknown';
+  const mainStudioId = mainStudioNode?.id ?? null;
 
   const producers = anime.studios.nodes
     .filter((s) => !s.isAnimationStudio && s.name !== mainStudio)
@@ -95,20 +98,39 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   let user = null;
   let currentTrackingStatus: TrackingStatus | null = null;
   let currentProgress = 0;
+  let currentFavourite = false;
+  let currentRewatches = 0;
+  let currentNotes = '';
   if (isSupabaseConfigured()) {
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
     user = data.user;
     if (user) {
-      const { data: tracking } = await supabase
+      // Try the full select; fall back if extras columns aren't migrated yet.
+      let tracking: Record<string, unknown> | null = null;
+      const full = await supabase
         .from('anime_tracking')
-        .select('status, progress')
+        .select('status, progress, is_favourite, rewatches, notes')
         .eq('user_id', user.id)
         .eq('anime_id', id)
         .single();
+      if (full.error) {
+        const basic = await supabase
+          .from('anime_tracking')
+          .select('status, progress')
+          .eq('user_id', user.id)
+          .eq('anime_id', id)
+          .single();
+        tracking = basic.data ?? null;
+      } else {
+        tracking = full.data ?? null;
+      }
       if (tracking) {
         currentTrackingStatus = tracking.status as TrackingStatus;
-        currentProgress = tracking.progress ?? 0;
+        currentProgress = (tracking.progress as number) ?? 0;
+        currentFavourite = Boolean(tracking.is_favourite);
+        currentRewatches = (tracking.rewatches as number) ?? 0;
+        currentNotes = (tracking.notes as string) ?? '';
       }
     }
   }
@@ -204,6 +226,15 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 initialProgress={currentProgress}
                 initialStatus={currentTrackingStatus}
                 isAuthenticated={!!user}
+              />
+            )}
+
+            {user && currentTrackingStatus && (
+              <EntryExtras
+                animeId={anime.id}
+                initialFavourite={currentFavourite}
+                initialRewatches={currentRewatches}
+                initialNotes={currentNotes}
               />
             )}
 
@@ -331,7 +362,16 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs sm:text-sm text-gray-400 mb-1">Studio</p>
-                    <p className="text-sm sm:text-base text-white font-medium">{mainStudio}</p>
+                    {mainStudioId ? (
+                      <Link
+                        href={`/studio/${mainStudioId}`}
+                        className="text-sm sm:text-base text-white font-medium hover:text-violet-300 transition-colors"
+                      >
+                        {mainStudio}
+                      </Link>
+                    ) : (
+                      <p className="text-sm sm:text-base text-white font-medium">{mainStudio}</p>
+                    )}
                   </div>
                 </div>
 

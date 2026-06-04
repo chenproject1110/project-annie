@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { Heart } from 'lucide-react';
 import { useTitleLanguage } from '@/context/TitleLanguageContext';
 import { useTrackingProgress } from '@/context/TrackingContext';
 import { CoverProgressBar } from '@/components/CoverProgressBar';
@@ -11,6 +12,7 @@ interface TrackedAnimeCardProps {
   animeTitle: string | null;
   animeTitleRomaji: string | null;
   coverImageUrl: string | null;
+  favourite?: boolean;
 }
 
 export function TrackedAnimeCard({
@@ -18,6 +20,7 @@ export function TrackedAnimeCard({
   animeTitle,
   animeTitleRomaji,
   coverImageUrl,
+  favourite = false,
 }: TrackedAnimeCardProps) {
   const { titleLanguage } = useTitleLanguage();
   const trackingProgress = useTrackingProgress(animeId);
@@ -43,6 +46,11 @@ export function TrackedAnimeCard({
         ) : (
           <div className="h-full w-full bg-gray-700 flex items-center justify-center">
             <span className="text-gray-500 text-xs">No Image</span>
+          </div>
+        )}
+        {favourite && (
+          <div className="absolute top-1.5 left-1.5 z-[3] flex h-5 w-5 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm">
+            <Heart className="h-3 w-3 text-rose-400" fill="currentColor" />
           </div>
         )}
         {trackingProgress && (

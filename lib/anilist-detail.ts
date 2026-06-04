@@ -34,7 +34,7 @@ const DETAIL_QUERY = `
       startDate { year month day }
       endDate { year month day }
       genres
-      studios { nodes { name isAnimationStudio } }
+      studios { nodes { id name isAnimationStudio } }
       relations {
         edges {
           relationType
@@ -92,7 +92,7 @@ interface AniListDetailResponse {
     endDate: { year: number | null; month: number | null; day: number | null };
     genres: string[];
     studios: {
-      nodes: Array<{ name: string; isAnimationStudio: boolean }>;
+      nodes: Array<{ id: number; name: string; isAnimationStudio: boolean }>;
     };
     relations: {
       edges: Array<{
@@ -218,6 +218,7 @@ async function fetchAnimeDetailUncached(id: number): Promise<AnimeDetail> {
     genres: m.genres || [],
     studios: {
       nodes: (m.studios?.nodes ?? []).map((s) => ({
+        id: s.id,
         name: s.name,
         isAnimationStudio: s.isAnimationStudio,
       })),

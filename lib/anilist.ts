@@ -119,6 +119,7 @@ interface ExternalLink {
 }
 
 interface StudioNode {
+  id: number;
   name: string;
   isAnimationStudio: boolean;
 }
@@ -581,6 +582,215 @@ export async function searchAnime(searchTerm: string, perPage: number = 30): Pro
   } catch (error) {
     console.error('Error searching anime:', error);
     return [];
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tracked media info (for profile cards + stats)                     */
+/* ------------------------------------------------------------------ */
+
+export interface TrackedMediaInfo {
+  id: number;
+  title: { romaji: string; english: string | null };
+  cover: string | null;
+  genres: string[];
+  episodes: number | null;
+  duration: number | null;
+  format: string | null;
+  seasonYear: number | null;
+  studio: { id: number; name: string } | null;
+}
+
+interface TrackedMediaResponse {
+  Page: {
+    pageInfo: { hasNextPage: boolean };
+    media: Array<{
+      id: number;
+      title: { romaji: string; english: string | null };
+      coverImage: { large: string | null };
+      genres: string[];
+      episodes: number | null;
+      duration: number | null;
+      format: string | null;
+      seasonYear: number | null;
+      studios: { nodes: Array<{ id: number; name: string }> };
+    }>;
+  };
+}
+
+/** Batch-fetch media details for a set of ids (paginated), keyed by id. */
+export async function fetchTrackedMediaInfo(
+  ids: number[],
+): Promise<Map<number, TrackedMediaInfo>> {
+  const map = new Map<number, TrackedMediaInfo>();
+  if (ids.length === 0) return map;
+
+  let page = 1;
+  let hasNext = true;
+  while (hasNext && page <= 20) {
+    const data = await anilistQuery<TrackedMediaResponse>(
+      `query ($ids: [Int], $page: Int) {
+        Page(page: $page, perPage: 50) {
+          pageInfo { hasNextPage }
+          media(id_in: $ids, type: ANIME) {
+            id
+            title { romaji english }
+            coverImage { large }
+            genres
+            episodes
+            duration
+            format
+            seasonYear
+            studios(isMain: true) { nodes { id name } }
+          }
+        }
+      }`,
+      { ids, page },
+    );
+    for (const m of data.Page.media) {
+      const st = m.studios?.nodes?.[0];
+      map.set(m.id, {
+        id: m.id,
+        title: { romaji: m.title.romaji || 'Untitled', english: m.title.english },
+        cover: m.coverImage?.large ?? null,
+        genres: m.genres ?? [],
+        episodes: m.episodes,
+        duration: m.duration,
+        format: m.format,
+        seasonYear: m.seasonYear,
+        studio: st ? { id: st.id, name: st.name } : null,
+      });
+    }
+    hasNext = data.Page.pageInfo.hasNextPage;
+    page++;
+  }
+  return map;
+}
+
+/* ------------------------------------------------------------------ */
+/*  AniList list import                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface ImportEntry {
+  animeId: number;
+  status: string;
+  progress: number;
+  totalEpisodes: number | null;
+}
+
+const AL_STATUS_MAP: Record<string, string> = {
+  CURRENT: 'watching',
+  REPEATING: 'watching',
+  PLANNING: 'planning',
+  COMPLETED: 'completed',
+  DROPPED: 'dropped',
+  PAUSED: 'paused',
+};
+
+interface MediaListCollectionResponse {
+  MediaListCollection: {
+    lists: Array<{
+      entries: Array<{
+        status: string;
+        progress: number | null;
+        media: { id: number; episodes: number | null };
+      }>;
+    }>;
+  } | null;
+}
+
+/** Fetch a public AniList user's anime list, mapped to ANNIE's tracking shape. */
+export async function fetchAniListUserList(userName: string): Promise<ImportEntry[]> {
+  const data = await anilistQuery<MediaListCollectionResponse>(
+    `query ($userName: String) {
+      MediaListCollection(userName: $userName, type: ANIME) {
+        lists {
+          entries {
+            status
+            progress
+            media { id episodes }
+          }
+        }
+      }
+    }`,
+    { userName },
+    { cache: 'no-store' },
+  );
+
+  const coll = data.MediaListCollection;
+  if (!coll) return [];
+
+  const byId = new Map<number, ImportEntry>();
+  for (const list of coll.lists ?? []) {
+    for (const e of list.entries ?? []) {
+      const status = AL_STATUS_MAP[e.status];
+      if (!status || byId.has(e.media.id)) continue;
+      byId.set(e.media.id, {
+        animeId: e.media.id,
+        status,
+        progress: e.progress ?? 0,
+        totalEpisodes: e.media.episodes ?? null,
+      });
+    }
+  }
+  return [...byId.values()];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Multi-entity search (characters / staff / studios)                 */
+/* ------------------------------------------------------------------ */
+
+export interface EntityHit {
+  id: number;
+  name: string;
+  image: string | null;
+}
+
+export interface EntityResults {
+  characters: EntityHit[];
+  staff: EntityHit[];
+  studios: EntityHit[];
+}
+
+interface EntitySearchResponse {
+  characters: { characters: Array<{ id: number; name: { full: string }; image: { large: string | null } }> };
+  staff: { staff: Array<{ id: number; name: { full: string }; image: { large: string | null } }> };
+  studios: { studios: Array<{ id: number; name: string }> };
+}
+
+export async function searchEntities(searchTerm: string): Promise<EntityResults> {
+  const empty: EntityResults = { characters: [], staff: [], studios: [] };
+  if (!searchTerm.trim()) return empty;
+  try {
+    const data = await anilistQuery<EntitySearchResponse>(
+      `query ($q: String) {
+        characters: Page(page: 1, perPage: 12) {
+          characters(search: $q, sort: SEARCH_MATCH) { id name { full } image { large } }
+        }
+        staff: Page(page: 1, perPage: 12) {
+          staff(search: $q, sort: SEARCH_MATCH) { id name { full } image { large } }
+        }
+        studios: Page(page: 1, perPage: 8) {
+          studios(search: $q) { id name }
+        }
+      }`,
+      { q: searchTerm.trim() },
+    );
+    return {
+      characters: data.characters.characters.map((c) => ({
+        id: c.id,
+        name: c.name.full,
+        image: c.image?.large ?? null,
+      })),
+      staff: data.staff.staff.map((s) => ({
+        id: s.id,
+        name: s.name.full,
+        image: s.image?.large ?? null,
+      })),
+      studios: data.studios.studios.map((s) => ({ id: s.id, name: s.name, image: null })),
+    };
+  } catch {
+    return empty;
   }
 }
 

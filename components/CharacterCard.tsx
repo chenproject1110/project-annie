@@ -13,9 +13,13 @@ export function CharacterCard({ character }: CharacterCardProps) {
   return (
     <div className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors border border-gray-700">
       <div className="grid grid-cols-2 gap-0">
-        {/* Character Side */}
-        <div className="flex flex-col items-center p-4">
-          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50 bg-gray-700">
+        {/* Character Side — links to the character page */}
+        <Link
+          href={`/character/${node.id}`}
+          className="group/char flex flex-col items-center p-4 transition-colors hover:bg-gray-750 active:scale-95"
+          aria-label={`View character ${node.name.full}`}
+        >
+          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50 group-hover/char:ring-violet-400 bg-gray-700 transition-all">
             {node.image.large ? (
               <Image
                 src={node.image.large}
@@ -27,7 +31,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             ) : null}
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-white mb-1 line-clamp-2">
+            <p className="text-sm font-semibold text-white group-hover/char:text-violet-200 mb-1 line-clamp-2 transition-colors">
               {node.name.full}
             </p>
             {node.name.native && (
@@ -36,7 +40,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
               </p>
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Voice Actor Side — links to the VA page */}
         {va && (

@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { Play, CheckCircle, Bookmark, XCircle, Pause } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { anilistQuery } from '@/lib/anilist';
+import { fetchTrackedMediaInfo, type TrackedMediaInfo } from '@/lib/anilist';
 import { ProfileDisplayNameEditor } from '@/components/ProfileDisplayNameEditor';
-import { TrackedAnimeCard } from '@/components/TrackedAnimeCard';
+import { ProfileStats, type ProfileStatsData } from '@/components/ProfileStats';
+import { ProfileListView, type ProfileItem } from '@/components/ProfileListView';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 
 export const dynamic = 'force-dynamic';
@@ -18,62 +18,11 @@ type TrackingStatus = 'watching' | 'completed' | 'planning' | 'dropped' | 'pause
 interface TrackingRow {
   anime_id: number;
   status: TrackingStatus;
+  progress: number | null;
+  total_episodes: number | null;
+  updated_at: string;
+  is_favourite?: boolean | null;
 }
-
-interface AniListBasicMedia {
-  id: number;
-  title: { romaji: string; english: string | null };
-  coverImage: { large: string | null };
-}
-
-interface AniListBatchResponse {
-  Page: {
-    media: AniListBasicMedia[];
-  };
-}
-
-const STATUS_META: Record<
-  TrackingStatus,
-  { label: string; icon: typeof Play; color: string; bg: string; border: string }
-> = {
-  watching: {
-    label: 'Watching',
-    icon: Play,
-    color: 'text-violet-400',
-    bg: 'bg-violet-500/15',
-    border: 'border-violet-500/25',
-  },
-  completed: {
-    label: 'Completed',
-    icon: CheckCircle,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/15',
-    border: 'border-emerald-500/25',
-  },
-  planning: {
-    label: 'Planning',
-    icon: Bookmark,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/15',
-    border: 'border-blue-500/25',
-  },
-  dropped: {
-    label: 'Dropped',
-    icon: XCircle,
-    color: 'text-red-400',
-    bg: 'bg-red-500/15',
-    border: 'border-red-500/25',
-  },
-  paused: {
-    label: 'Paused',
-    icon: Pause,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/15',
-    border: 'border-amber-500/25',
-  },
-};
-
-const STATUS_ORDER: TrackingStatus[] = ['watching', 'completed', 'planning', 'paused', 'dropped'];
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -89,49 +38,107 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single();
 
-  const { data: trackingRows } = await supabase
+  // Staged fallback so the page works on any migration level.
+  let rows: TrackingRow[] = [];
+  const full = await supabase
     .from('anime_tracking')
-    .select('anime_id, status')
+    .select('anime_id, status, progress, total_episodes, updated_at, is_favourite')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
-
-  const rows = (trackingRows || []) as TrackingRow[];
-
-  const animeIds = rows.map((r) => r.anime_id);
-  const animeMap = new Map<number, AniListBasicMedia>();
-
-  if (animeIds.length > 0) {
-    try {
-      const data = await anilistQuery<AniListBatchResponse>(
-        `query ($ids: [Int]) {
-          Page(page: 1, perPage: 50) {
-            media(id_in: $ids, type: ANIME) {
-              id
-              title { romaji english }
-              coverImage { large }
-            }
-          }
-        }`,
-        { ids: animeIds },
-      );
-      for (const m of data.Page.media) {
-        animeMap.set(m.id, m);
-      }
-    } catch {
-      // AniList unavailable — cards will show fallback text
+  if (!full.error) {
+    rows = (full.data ?? []) as TrackingRow[];
+  } else {
+    const mid = await supabase
+      .from('anime_tracking')
+      .select('anime_id, status, progress, total_episodes, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+    if (!mid.error) {
+      rows = (mid.data ?? []) as TrackingRow[];
+    } else {
+      const basic = await supabase
+        .from('anime_tracking')
+        .select('anime_id, status, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      rows = (basic.data ?? []).map((r) => ({
+        anime_id: r.anime_id,
+        status: r.status,
+        progress: 0,
+        total_episodes: null,
+        updated_at: r.updated_at,
+      })) as TrackingRow[];
     }
   }
 
-  const grouped: Record<TrackingStatus, TrackingRow[]> = {
-    watching: [],
-    completed: [],
-    planning: [],
-    dropped: [],
-    paused: [],
-  };
-  for (const row of rows) {
-    grouped[row.status]?.push(row);
+  const ids = rows.map((r) => r.anime_id);
+  let mediaMap = new Map<number, TrackedMediaInfo>();
+  try {
+    mediaMap = await fetchTrackedMediaInfo(ids);
+  } catch {
+    // AniList unavailable — cards/stats fall back gracefully
   }
+
+  // Build list items.
+  const items: ProfileItem[] = rows.map((r) => {
+    const info = mediaMap.get(r.anime_id);
+    return {
+      animeId: r.anime_id,
+      status: r.status,
+      progress: r.progress ?? 0,
+      total: r.total_episodes ?? info?.episodes ?? null,
+      english: info?.title.english ?? null,
+      romaji: info?.title.romaji ?? null,
+      cover: info?.cover ?? null,
+      year: info?.seasonYear ?? null,
+      updatedAt: r.updated_at,
+      favourite: Boolean(r.is_favourite),
+    };
+  });
+
+  // Compute stats.
+  let episodesWatched = 0;
+  let minutesWatched = 0;
+  const genreCount = new Map<string, number>();
+  const studioCount = new Map<string, { count: number; id: number | null }>();
+
+  for (const r of rows) {
+    const info = mediaMap.get(r.anime_id);
+    const totalEps = r.total_episodes ?? info?.episodes ?? 0;
+    const watched =
+      (r.progress ?? 0) > 0
+        ? (r.progress as number)
+        : r.status === 'completed'
+          ? totalEps
+          : 0;
+    episodesWatched += watched;
+    minutesWatched += watched * (info?.duration ?? 24);
+
+    if (info) {
+      for (const g of info.genres) genreCount.set(g, (genreCount.get(g) ?? 0) + 1);
+      if (info.studio) {
+        const prev = studioCount.get(info.studio.name);
+        studioCount.set(info.studio.name, {
+          count: (prev?.count ?? 0) + 1,
+          id: info.studio.id,
+        });
+      }
+    }
+  }
+
+  const stats: ProfileStatsData = {
+    totalTitles: rows.length,
+    episodesWatched,
+    hoursWatched: Math.round(minutesWatched / 60),
+    topGenres: [...genreCount.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6),
+    topStudios: [...studioCount.entries()]
+      .map(([name, v]) => ({ name, count: v.count, id: v.id }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5),
+  };
 
   const displayName = profile?.display_name || user.email || 'User';
   const initial = displayName.charAt(0).toUpperCase();
@@ -146,75 +153,32 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Display Name Editor */}
         <div className="mb-2">
           <ProfileDisplayNameEditor initialName={displayName} />
         </div>
 
-        <p className="mb-8 text-center text-sm text-gray-500">{user.email}</p>
+        <p className="mb-3 text-center text-sm text-gray-500">{user.email}</p>
 
-        {/* Stats Cards — clickable anchors */}
-        <div className="mb-10 flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-          {STATUS_ORDER.map((status) => {
-            const meta = STATUS_META[status];
-            const Icon = meta.icon;
-            const count = grouped[status].length;
-            return (
-              <a
-                key={status}
-                href={`#section-${status}`}
-                className={`flex shrink-0 items-center gap-2.5 rounded-xl border px-4 py-3 backdrop-blur-md transition-all hover:brightness-125 ${meta.bg} ${meta.border}`}
-              >
-                <Icon className={`h-4 w-4 ${meta.color}`} />
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-400">{meta.label}</span>
-                  <span className="text-sm font-semibold text-white">{count}</span>
-                </div>
-              </a>
-            );
-          })}
+        <div className="mb-8 flex justify-center gap-2">
+          <a
+            href="/import"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+          >
+            Import from AniList
+          </a>
+          <a
+            href="/settings"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+          >
+            Settings
+          </a>
         </div>
 
-        {/* Anime Grid by Status */}
-        {STATUS_ORDER.map((status) => {
-          const items = grouped[status];
-          if (items.length === 0) return null;
-          const meta = STATUS_META[status];
+        <ProfileStats stats={stats} />
 
-          return (
-            <section key={status} id={`section-${status}`} className="mb-10 scroll-mt-6">
-              <h2 className="mb-4 text-lg font-bold text-white sm:text-xl">
-                {status === 'watching' ? 'Currently Watching' : meta.label}
-              </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {items.map((row) => {
-                  const info = animeMap.get(row.anime_id);
-                  return (
-                    <TrackedAnimeCard
-                      key={row.anime_id}
-                      animeId={row.anime_id}
-                      animeTitle={info?.title.english ?? null}
-                      animeTitleRomaji={info?.title.romaji ?? null}
-                      coverImageUrl={info?.coverImage.large ?? null}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
-
-        {rows.length === 0 && (
-          <div className="py-16 text-center">
-            <p className="text-gray-500">No anime tracked yet.</p>
-            <p className="mt-1 text-sm text-gray-600">
-              Browse anime and start building your list!
-            </p>
-          </div>
-        )}
+        <ProfileListView items={items} />
       </div>
 
-      {/* Go to Top — only appears after scrolling */}
       <ScrollToTopButton />
     </main>
   );

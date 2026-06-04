@@ -1,5 +1,14 @@
 # PROJECT ANNIE — Roadmap v2 (Upcoming)
 
+> **Progress note (autonomous session):** Shipped — Character pages (3), Studio
+> pages + studio links (4), AniList list **import** (1), **stats dashboard** (2),
+> profile **list controls** + Favourites (5), **multi-entity search** (8),
+> **settings** page (10), and **per-entry extras** — private favourite, rewatch
+> count, notes (6). Requires running two SQL migrations:
+> `supabase/migrations/0002_entry_extras.sql` (and `0001` if not already applied).
+> **Still open:** custom lists/tags (7), activity feed (9), and the on-hold public
+> profiles + notifications. Verify with `npm run build` before deploying.
+
 A forward-looking plan, written for what this project actually is: a personal
 anime tracker for you and a few friends. So it leans toward **power-user utility
 and things that are fun to own**, not growth, virality, or moderation overhead.
