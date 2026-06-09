@@ -26,7 +26,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
   const trackingProgress = useTrackingProgress(anime.id);
 
   return (
-    <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
+    <Link href={`/anime/${anime.id}`} className="group flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-surface shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer">
       {/* Cover Image Container - Fixed Aspect Ratio */}
       <div className="relative w-full aspect-[2/3] overflow-hidden">
         <Image
@@ -110,7 +110,7 @@ export function AnimeCard({ anime }: AnimeCardProps) {
           <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">
             {title}
           </h3>
-          <p className="text-[10px] sm:text-xs text-gray-300 line-clamp-1 mt-0.5">
+          <p className="text-[10px] sm:text-xs text-fg-muted line-clamp-1 mt-0.5">
             {studio} {anime.episodes && `• ${anime.episodes} eps`}
           </p>
         </div>

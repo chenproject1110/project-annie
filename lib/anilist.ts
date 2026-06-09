@@ -299,6 +299,7 @@ interface FetchAnimeParams {
   search?: string;
   genres?: string[];
   formats?: string[];
+  studio?: string;
 }
 
 export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
@@ -377,6 +378,15 @@ export async function fetchAnime(params: FetchAnimeParams): Promise<Anime[]> {
     all.push(...data.Page.media.map(mapMedia));
     hasNext = data.Page.pageInfo.hasNextPage;
     page++;
+  }
+
+  // Studio filter is applied client-side over the season results (AniList's media
+  // query has no studio argument). Matches the main animation studio.
+  const studio = params.studio?.trim().toLowerCase();
+  if (studio) {
+    return all.filter((a) =>
+      a.studios?.nodes?.some((n) => n.name.toLowerCase() === studio),
+    );
   }
 
   return all;
@@ -791,6 +801,28 @@ export async function searchEntities(searchTerm: string): Promise<EntityResults>
     };
   } catch {
     return empty;
+  }
+}
+
+interface StudioSearchResponse {
+  Page: { studios: Array<{ id: number; name: string }> };
+}
+
+/** Type-ahead studio search for the Browse filter. */
+export async function searchStudios(searchTerm: string): Promise<{ id: number; name: string }[]> {
+  if (!searchTerm.trim()) return [];
+  try {
+    const data = await anilistQuery<StudioSearchResponse>(
+      `query ($q: String) {
+        Page(page: 1, perPage: 8) {
+          studios(search: $q) { id name }
+        }
+      }`,
+      { q: searchTerm.trim() },
+    );
+    return data.Page.studios.map((s) => ({ id: s.id, name: s.name }));
+  } catch {
+    return [];
   }
 }
 

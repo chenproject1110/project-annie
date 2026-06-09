@@ -152,6 +152,17 @@ Persist per-user (Supabase) or locally.
 
 ---
 
+## UI/UX backlog (added later)
+
+- **Light / dark mode toggle** — *High effort.* The app currently hardcodes dark
+  colors across ~40 components, so a real light theme means a systematic refactor
+  (theme tokens / `dark:` variants + a toggle in the nav and sidebar). Best done
+  as its own focused pass, not piecemeal — otherwise half the app stays dark.
+  Pairs well with the upcoming mobile research round.
+- **Sidebar (mobile menu) redesign** — the slide-out menu is functional but plain.
+  Candidates: quick links (Search, Import, Settings — Settings now added), recent
+  activity, theme toggle, a search field, version footer. Scope after research.
+
 ## Suggested order
 
 For maximum personal payoff: **import (1)** so your real list lives here →

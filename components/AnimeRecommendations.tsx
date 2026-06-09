@@ -17,7 +17,7 @@ export async function AnimeRecommendations({ animeId }: { animeId: number }) {
 
   return (
     <div>
-      <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Recommended</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">Recommended</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {recs.map((anime) => (
           <AnimeCard key={anime.id} anime={anime} />

@@ -96,7 +96,7 @@ export function ProfileDisplayNameEditor({ initialName }: ProfileDisplayNameEdit
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="rounded-full p-1.5 text-fg-muted hover:bg-line/10 transition-colors disabled:opacity-50"
               aria-label="Cancel"
             >
               <X className="h-4 w-4" />
@@ -111,10 +111,10 @@ export function ProfileDisplayNameEditor({ initialName }: ProfileDisplayNameEdit
             transition={transition}
             className="flex items-center gap-2"
           >
-            <h1 className="text-xl sm:text-2xl font-bold text-white">{name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-fg">{name}</h1>
             <button
               onClick={() => setEditing(true)}
-              className="rounded-full p-1.5 text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+              className="rounded-full p-1.5 text-fg-muted hover:text-fg hover:bg-line/10 transition-colors"
               aria-label="Edit display name"
             >
               <Pencil className="h-4 w-4" />

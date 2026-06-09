@@ -59,8 +59,8 @@ export function ImportClient() {
 
   if (signedIn === false) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-        <p className="text-gray-300">You need to be signed in to import a list.</p>
+      <div className="rounded-2xl border border-line/10 bg-line/[0.03] p-6 text-center">
+        <p className="text-fg-muted">You need to be signed in to import a list.</p>
         <Link
           href="/login?redirect=/import"
           className="mt-4 inline-flex rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
@@ -78,7 +78,7 @@ export function ImportClient() {
         <p className="mt-3 text-lg font-semibold text-white">
           Imported {importedCount} titles
         </p>
-        <p className="mt-1 text-sm text-gray-400">Your list and progress are now in ANNIE.</p>
+        <p className="mt-1 text-sm text-fg-muted">Your list and progress are now in ANNIE.</p>
         <Link
           href="/profile"
           className="mt-4 inline-flex rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
@@ -90,8 +90,8 @@ export function ImportClient() {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-      <label htmlFor="al-username" className="block text-sm font-medium text-gray-300 mb-2">
+    <div className="rounded-2xl border border-line/10 bg-line/[0.03] p-5 sm:p-6">
+      <label htmlFor="al-username" className="block text-sm font-medium text-fg-muted mb-2">
         AniList username
       </label>
       <div className="flex flex-col sm:flex-row gap-3">
@@ -103,7 +103,7 @@ export function ImportClient() {
           onKeyDown={(e) => e.key === 'Enter' && phase === 'idle' && handleImport()}
           placeholder="e.g. yourname"
           disabled={phase === 'loading'}
-          className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 disabled:opacity-60"
+          className="flex-1 rounded-xl border border-line/10 bg-line/[0.04] px-4 py-3 text-fg placeholder-fg-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 disabled:opacity-60"
         />
         <button
           type="button"
@@ -124,7 +124,7 @@ export function ImportClient() {
           )}
         </button>
       </div>
-      <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+      <p className="mt-3 text-xs text-fg-muted leading-relaxed">
         Pulls your anime list and episode progress from a <strong>public</strong> AniList profile.
         Matching titles already in your list are updated. Nothing on AniList is changed.
       </p>

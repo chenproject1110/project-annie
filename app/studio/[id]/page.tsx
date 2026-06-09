@@ -46,11 +46,11 @@ export default async function StudioPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a]">
+    <main className="min-h-screen bg-bg">
       <div className="mx-auto max-w-7xl px-8 py-6 sm:py-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors text-sm"
+          className="inline-flex items-center gap-2 text-fg-muted hover:text-fg mb-6 transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Home
@@ -64,14 +64,14 @@ export default async function StudioPage({ params }: PageProps) {
             <div className="flex items-center gap-2 text-violet-400 text-xs font-semibold uppercase tracking-wide mb-1">
               Studio
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">{studio.name}</h1>
-            <p className="text-sm text-gray-500 mt-1">{studio.works.length} works</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-fg tracking-tight">{studio.name}</h1>
+            <p className="text-sm text-fg-muted mt-1">{studio.works.length} works</p>
           </div>
         </header>
 
         <section className="mt-10">
           {studio.works.length === 0 ? (
-            <p className="text-gray-500 text-sm">No anime found for this studio.</p>
+            <p className="text-fg-muted text-sm">No anime found for this studio.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               {studio.works.map((w) => {
@@ -80,7 +80,7 @@ export default async function StudioPage({ params }: PageProps) {
                   <Link
                     key={w.mediaId}
                     href={`/anime/${w.mediaId}`}
-                    className="group flex flex-col rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100"
+                    className="group flex flex-col rounded-xl overflow-hidden bg-surface shadow-lg hover:shadow-2xl transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100"
                   >
                     <div className="relative w-full aspect-[2/3] overflow-hidden">
                       {w.cover ? (
@@ -92,8 +92,8 @@ export default async function StudioPage({ params }: PageProps) {
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gray-700">
-                          <span className="text-xs text-gray-500">No Image</span>
+                        <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                          <span className="text-xs text-fg-muted">No Image</span>
                         </div>
                       )}
                       {w.year != null && (
@@ -103,11 +103,11 @@ export default async function StudioPage({ params }: PageProps) {
                       )}
                     </div>
                     <div className="p-2 sm:p-3">
-                      <p className="text-xs sm:text-sm font-medium text-white line-clamp-2 leading-tight">
+                      <p className="text-xs sm:text-sm font-medium text-fg line-clamp-2 leading-tight">
                         {title}
                       </p>
                       {formatLabel(w.format) && (
-                        <p className="mt-0.5 text-[11px] text-gray-500">{formatLabel(w.format)}</p>
+                        <p className="mt-0.5 text-[11px] text-fg-muted">{formatLabel(w.format)}</p>
                       )}
                     </div>
                   </Link>

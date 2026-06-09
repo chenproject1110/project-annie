@@ -14,8 +14,8 @@ import {
 import { getStatusLabel, stripHtml } from '@/lib/anilist';
 import { CharacterCard } from '@/components/CharacterCard';
 import { RelationCard } from '@/components/RelationCard';
-import { AnimeTrackingButtons, type TrackingStatus } from '@/components/AnimeTrackingButtons';
-import { EpisodeProgress } from '@/components/EpisodeProgress';
+import type { TrackingStatus } from '@/components/AnimeTrackingButtons';
+import { TrackingPanel } from '@/components/TrackingPanel';
 import { EntryExtras } from '@/components/EntryExtras';
 import { ThemeSongs, ThemeSongsSkeleton } from '@/components/ThemeSongs';
 import { AnimeRecommendations } from '@/components/AnimeRecommendations';
@@ -138,11 +138,11 @@ export default async function AnimeDetailPage({ params }: PageProps) {
   const totalEpisodes = anime.episodes != null && anime.episodes > 0 ? anime.episodes : null;
 
   return (
-    <main className="relative z-0 min-h-screen bg-[#0a0a0a] -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
+    <main className="relative z-0 min-h-screen bg-bg -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
       {/* Double-layer hero (global): blurred backdrop + sharp contain — no MAL banner asset */}
       <div className="relative">
         <div className="relative h-[350px] sm:h-[320px] md:h-[420px] w-full overflow-visible">
-          <div className="absolute -top-20 sm:-top-20 inset-x-0 bottom-0 bg-[#0a0a0a]" aria-hidden>
+          <div className="absolute -top-20 sm:-top-20 inset-x-0 bottom-0 bg-bg" aria-hidden>
             <Image
               src={art}
               alt=""
@@ -158,7 +158,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
           <div className="mx-auto max-w-7xl px-8">
             <Link
               href="/"
-              className="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 text-gray-300 hover:text-white mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
+              className="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 text-fg-muted hover:text-fg mb-3 sm:mb-6 transition-colors text-sm sm:text-base"
             >
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               Back to Home
@@ -184,13 +184,13 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             </div>
 
             {anime.title.native && (
-              <p className="text-sm min-[350px]:text-base sm:text-lg md:text-xl text-gray-300 mb-1 sm:mb-2">
+              <p className="text-sm min-[350px]:text-base sm:text-lg md:text-xl text-fg-muted mb-1 sm:mb-2">
                 {anime.title.native}
               </p>
             )}
 
             {anime.title.romaji !== title && (
-              <p className="text-xs min-[350px]:text-sm sm:text-base md:text-lg text-gray-400">{anime.title.romaji}</p>
+              <p className="text-xs min-[350px]:text-sm sm:text-base md:text-lg text-fg-muted">{anime.title.romaji}</p>
             )}
           </div>
         </div>
@@ -210,24 +210,14 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               />
             </div>
 
-            <AnimeTrackingButtons
+            <TrackingPanel
               animeId={anime.id}
-              animeTitle={anime.title.english || anime.title.romaji}
-              animeTitleRomaji={anime.title.romaji}
-              coverImageUrl={anime.coverImage.extraLarge}
+              totalEpisodes={totalEpisodes}
               initialStatus={currentTrackingStatus}
+              initialProgress={currentProgress}
               isAuthenticated={!!user}
+              showEpisodes={!!user && anime.format !== 'MOVIE'}
             />
-
-            {user && anime.format !== 'MOVIE' && (
-              <EpisodeProgress
-                animeId={anime.id}
-                totalEpisodes={totalEpisodes}
-                initialProgress={currentProgress}
-                initialStatus={currentTrackingStatus}
-                isAuthenticated={!!user}
-              />
-            )}
 
             {user && currentTrackingStatus && (
               <EntryExtras
@@ -240,7 +230,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
             {filteredLinks.length > 0 && (
               <div className="space-y-2 sm:space-y-3">
-                <h3 className="text-base sm:text-lg font-bold text-white">External Links</h3>
+                <h3 className="text-base sm:text-lg font-bold text-fg">External Links</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
                   {filteredLinks.map((link, index) => (
                     <a
@@ -248,7 +238,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-800 hover:bg-violet-600 text-white rounded-lg transition-colors group text-sm sm:text-base"
+                      className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-surface hover:bg-violet-600 text-fg hover:text-white rounded-lg transition-colors group text-sm sm:text-base"
                     >
                       <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
                       <span className="font-medium truncate">{link.site}</span>
@@ -260,7 +250,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
             {anime.genres.length > 0 && (
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-3">Genres</h3>
+                <h3 className="text-base sm:text-lg font-bold text-fg mb-2 sm:mb-3">Genres</h3>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {anime.genres.map((genre) => (
                     <span
@@ -278,52 +268,52 @@ export default async function AnimeDetailPage({ params }: PageProps) {
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 order-2">
             {description && (
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Synopsis</h2>
-                <p className="text-sm sm:text-base text-gray-300 leading-relaxed whitespace-pre-wrap">
+                <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">Synopsis</h2>
+                <p className="text-sm sm:text-base text-fg-muted leading-relaxed whitespace-pre-wrap">
                   {description}
                 </p>
               </div>
             )}
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Information</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {anime.format && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <Tv className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-400 mb-1">Format</p>
-                      <p className="text-white font-medium">{formatMediaFormat(anime.format)}</p>
+                      <p className="text-sm text-fg-muted mb-1">Format</p>
+                      <p className="text-fg font-medium">{formatMediaFormat(anime.format)}</p>
                     </div>
                   </div>
                 )}
 
                 {anime.episodes != null && anime.episodes > 0 && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <Play className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">Episodes</p>
-                      <p className="text-sm sm:text-base text-white font-medium">{anime.episodes}</p>
+                      <p className="text-xs sm:text-sm text-fg-muted mb-1">Episodes</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">{anime.episodes}</p>
                     </div>
                   </div>
                 )}
 
                 {anime.duration && anime.duration !== 'Unknown' && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">Episode Duration</p>
-                      <p className="text-sm sm:text-base text-white font-medium">{anime.duration}</p>
+                      <p className="text-xs sm:text-sm text-fg-muted mb-1">Episode Duration</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">{anime.duration}</p>
                     </div>
                   </div>
                 )}
 
                 {anime.season && anime.seasonYear && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">Season</p>
-                      <p className="text-sm sm:text-base text-white font-medium">
+                      <p className="text-xs sm:text-sm text-fg-muted mb-1">Season</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">
                         {anime.season.charAt(0) + anime.season.slice(1).toLowerCase()}{' '}
                         {anime.seasonYear}
                       </p>
@@ -331,11 +321,11 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                   </div>
                 )}
 
-                <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-400 mb-1">Aired (JST)</p>
-                    <p className="text-sm sm:text-base text-white font-medium">
+                    <p className="text-xs sm:text-sm text-fg-muted mb-1">Aired (JST)</p>
+                    <p className="text-sm sm:text-base text-fg font-medium">
                       {startDateJST}
                       {endDateJST && ` to ${endDateJST}`}
                     </p>
@@ -343,46 +333,46 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 </div>
 
                 {anime.source && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <div className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0 flex items-center justify-center">
                       <span className="text-base sm:text-lg">📚</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">Source</p>
-                      <p className="text-sm sm:text-base text-white font-medium">
+                      <p className="text-xs sm:text-sm text-fg-muted mb-1">Source</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">
                         {formatMediaSource(anime.source)}
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                   <div className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0 flex items-center justify-center">
                     <span className="text-base sm:text-lg">🎬</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-400 mb-1">Studio</p>
+                    <p className="text-xs sm:text-sm text-fg-muted mb-1">Studio</p>
                     {mainStudioId ? (
                       <Link
                         href={`/studio/${mainStudioId}`}
-                        className="text-sm sm:text-base text-white font-medium hover:text-violet-300 transition-colors"
+                        className="text-sm sm:text-base text-fg font-medium hover:text-violet-300 transition-colors"
                       >
                         {mainStudio}
                       </Link>
                     ) : (
-                      <p className="text-sm sm:text-base text-white font-medium">{mainStudio}</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">{mainStudio}</p>
                     )}
                   </div>
                 </div>
 
                 {producers.length > 0 && (
-                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                  <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-surface rounded-lg">
                     <div className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 mt-0.5 flex-shrink-0 flex items-center justify-center">
                       <span className="text-base sm:text-lg">🎭</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-gray-400 mb-1">Producers</p>
-                      <p className="text-sm sm:text-base text-white font-medium">
+                      <p className="text-xs sm:text-sm text-fg-muted mb-1">Producers</p>
+                      <p className="text-sm sm:text-base text-fg font-medium">
                         {producers.join(', ')}
                       </p>
                     </div>
@@ -394,7 +384,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                     <Radio className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs sm:text-sm text-violet-300 mb-1">Broadcast Schedule</p>
-                      <p className="text-sm sm:text-base text-white font-medium">
+                      <p className="text-sm sm:text-base text-fg font-medium">
                         {anime.broadcastSchedule}
                       </p>
                     </div>
@@ -410,7 +400,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
             {relationEdges.length > 0 && (
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">
                   Related Anime
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -423,7 +413,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
             {anime.characters.edges.length > 0 && (
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">
                   Characters & Cast
                 </h2>
                 <div className="grid grid-cols-1 gap-3 sm:gap-4">

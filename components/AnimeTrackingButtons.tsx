@@ -139,8 +139,8 @@ export function AnimeTrackingButtons({
               disabled:opacity-60
               ${
                 isActive
-                  ? `${cfg.bg} ${cfg.glow} text-white border border-white/20`
-                  : 'bg-black/40 backdrop-blur-md border border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                  ? `${cfg.bg} ${cfg.glow} text-white border border-line/20`
+                  : 'bg-black/40 backdrop-blur-md border border-line/10 text-fg-muted hover:text-white hover:border-line/20'
               }
             `}
             aria-pressed={isActive}

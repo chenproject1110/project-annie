@@ -11,15 +11,15 @@ export function CharacterCard({ character }: CharacterCardProps) {
   const va = voiceActors[0]; // Get first (Japanese) voice actor
 
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors border border-gray-700">
+    <div className="bg-surface rounded-lg overflow-hidden hover:bg-surface transition-colors border border-gray-700">
       <div className="grid grid-cols-2 gap-0">
         {/* Character Side — links to the character page */}
         <Link
           href={`/character/${node.id}`}
-          className="group/char flex flex-col items-center p-4 transition-colors hover:bg-gray-750 active:scale-95"
+          className="group/char flex flex-col items-center p-4 transition-colors hover:bg-surface active:scale-95"
           aria-label={`View character ${node.name.full}`}
         >
-          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50 group-hover/char:ring-violet-400 bg-gray-700 transition-all">
+          <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-violet-500/50 group-hover/char:ring-violet-400 bg-surface-2 transition-all">
             {node.image.large ? (
               <Image
                 src={node.image.large}
@@ -31,11 +31,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
             ) : null}
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-white group-hover/char:text-violet-200 mb-1 line-clamp-2 transition-colors">
+            <p className="text-sm font-semibold text-fg group-hover/char:text-violet-200 mb-1 line-clamp-2 transition-colors">
               {node.name.full}
             </p>
             {node.name.native && (
-              <p className="text-xs text-gray-400 line-clamp-1">
+              <p className="text-xs text-fg-muted line-clamp-1">
                 {node.name.native}
               </p>
             )}
@@ -46,10 +46,10 @@ export function CharacterCard({ character }: CharacterCardProps) {
         {va && (
           <Link
             href={`/staff/${va.id}`}
-            className="group/va flex flex-col items-center p-4 border-l border-gray-700 transition-colors hover:bg-gray-750 active:scale-95"
+            className="group/va flex flex-col items-center p-4 border-l border-gray-700 transition-colors hover:bg-surface active:scale-95"
             aria-label={`View voice actor ${va.name.full}`}
           >
-            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600 group-hover/va:ring-violet-500/60 bg-gray-700 transition-all">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 ring-2 ring-gray-600 group-hover/va:ring-violet-500/60 bg-surface-2 transition-all">
               {va.image.large ? (
                 <Image
                   src={va.image.large}
@@ -61,12 +61,12 @@ export function CharacterCard({ character }: CharacterCardProps) {
               ) : null}
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-400 mb-1">CV</p>
-              <p className="text-sm font-semibold text-gray-200 group-hover/va:text-white mb-1 line-clamp-2 transition-colors">
+              <p className="text-xs text-fg-muted mb-1">CV</p>
+              <p className="text-sm font-semibold text-fg-muted group-hover/va:text-fg mb-1 line-clamp-2 transition-colors">
                 {va.name.full}
               </p>
               {va.name.native && (
-                <p className="text-xs text-gray-500 line-clamp-1">
+                <p className="text-xs text-fg-muted line-clamp-1">
                   {va.name.native}
                 </p>
               )}

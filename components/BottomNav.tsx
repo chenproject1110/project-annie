@@ -56,7 +56,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-[90] sm:hidden border-t border-white/10 bg-black/70 backdrop-blur-xl pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed inset-x-0 bottom-0 z-[90] sm:hidden border-t border-line/10 bg-surface/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom,0px)]"
       aria-label="Primary"
     >
       <ul className="flex items-stretch">
@@ -70,7 +70,7 @@ export function BottomNav() {
                 onClick={() => setPendingHref(href)}
                 aria-current={active ? 'page' : undefined}
                 className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors active:scale-95 ${
-                  active ? 'text-violet-400' : 'text-gray-400 hover:text-white'
+                  active ? 'text-violet-400' : 'text-fg-muted hover:text-fg'
                 }`}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />

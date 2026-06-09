@@ -19,8 +19,19 @@ const config: Config = {
     'bg-red-500/15', 'border-red-500/25',
     'bg-amber-500/15', 'border-amber-500/25',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
+      colors: {
+        // Semantic theme tokens (driven by CSS vars in globals.css).
+        // Dark values match the current design, so dark mode is unchanged.
+        bg: 'rgb(var(--bg) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+        fg: 'rgb(var(--fg) / <alpha-value>)',
+        'fg-muted': 'rgb(var(--fg-muted) / <alpha-value>)',
+        line: 'rgb(var(--line) / <alpha-value>)',
+      },
       keyframes: {
         silkReveal: {
           '0%': { opacity: '0', transform: 'translateY(-6px) scale(0.98)' },

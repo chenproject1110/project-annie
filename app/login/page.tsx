@@ -64,7 +64,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="relative z-0 flex min-h-screen items-center justify-center bg-[#0a0a0a] px-4 -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:pt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
+    <main className="relative z-0 flex min-h-screen items-center justify-center bg-bg px-4 -mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:-mt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)] sm:pt-[calc(max(1rem,env(safe-area-inset-top,0px))+4.5rem)]">
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.08)_0%,transparent_70%)]"
         aria-hidden
@@ -75,7 +75,7 @@ function LoginForm() {
         variants={reduceMotion ? undefined : staggerContainer}
         initial="hidden"
         animate="show"
-        className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(139,92,246,0.15)]"
+        className="relative w-full max-w-sm rounded-2xl border border-line/10 bg-line/[0.04] p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(139,92,246,0.15)]"
       >
         <motion.div variants={fadeUp} transition={t} className="mb-6 flex justify-center">
           <Logo />
@@ -84,17 +84,17 @@ function LoginForm() {
         <motion.h1
           variants={fadeUp}
           transition={t}
-          className="mb-6 text-center text-xl font-semibold text-white"
+          className="mb-6 text-center text-xl font-semibold text-fg"
         >
           Sign in to your account
         </motion.h1>
 
         <motion.div variants={fadeUp} transition={t} className="mb-4">
-          <label htmlFor="email" className="mb-1.5 block text-sm text-gray-400">
+          <label htmlFor="email" className="mb-1.5 block text-sm text-fg-muted">
             Email
           </label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
             <input
               id="email"
               type="email"
@@ -102,18 +102,18 @@ function LoginForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.06] py-2.5 pl-10 pr-3 text-sm text-white placeholder-gray-500 outline-none transition-colors focus:border-purple-500"
+              className="w-full rounded-lg border border-line/10 bg-line/[0.06] py-2.5 pl-10 pr-3 text-sm text-fg placeholder-fg-muted outline-none transition-colors focus:border-purple-500"
               placeholder="you@example.com"
             />
           </div>
         </motion.div>
 
         <motion.div variants={fadeUp} transition={t} className="mb-6">
-          <label htmlFor="password" className="mb-1.5 block text-sm text-gray-400">
+          <label htmlFor="password" className="mb-1.5 block text-sm text-fg-muted">
             Password
           </label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
             <input
               id="password"
               type="password"
@@ -121,7 +121,7 @@ function LoginForm() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.06] py-2.5 pl-10 pr-3 text-sm text-white placeholder-gray-500 outline-none transition-colors focus:border-purple-500"
+              className="w-full rounded-lg border border-line/10 bg-line/[0.06] py-2.5 pl-10 pr-3 text-sm text-fg placeholder-fg-muted outline-none transition-colors focus:border-purple-500"
               placeholder="••••••••"
             />
           </div>

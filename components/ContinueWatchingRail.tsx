@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Plus, Check, Play } from 'lucide-react';
+import { hapticLight } from '@/lib/haptics';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { anilistQuery } from '@/lib/anilist';
 import { useTitleLanguage } from '@/context/TitleLanguageContext';
@@ -162,6 +163,7 @@ export function ContinueWatchingRail() {
           const cap = it.total && it.total > 0 ? it.total : null;
           const next = cap != null ? Math.min(it.progress + 1, cap) : it.progress + 1;
           if (next === it.progress) return it;
+          hapticLight();
 
           if (timersRef.current[animeId]) clearTimeout(timersRef.current[animeId]);
           timersRef.current[animeId] = setTimeout(
@@ -192,7 +194,7 @@ export function ContinueWatchingRail() {
         <Play className="h-5 w-5 text-violet-400" aria-hidden />
         <h2
           id="continue-watching-heading"
-          className="text-2xl md:text-4xl font-bold text-white tracking-tight"
+          className="text-2xl md:text-4xl font-bold text-fg tracking-tight"
         >
           Continue watching
         </h2>
@@ -215,7 +217,7 @@ export function ContinueWatchingRail() {
             >
               <Link
                 href={`/anime/${it.animeId}`}
-                className="group relative block aspect-[2/3] overflow-hidden rounded-xl bg-gray-800 shadow-lg active:scale-95 transition-transform"
+                className="group relative block aspect-[2/3] overflow-hidden rounded-xl bg-surface shadow-lg active:scale-95 transition-transform"
               >
                 {it.cover ? (
                   <Image
@@ -226,8 +228,8 @@ export function ContinueWatchingRail() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gray-700">
-                    <span className="text-xs text-gray-500">No Image</span>
+                  <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                    <span className="text-xs text-fg-muted">No Image</span>
                   </div>
                 )}
                 {cap != null && (
@@ -241,9 +243,9 @@ export function ContinueWatchingRail() {
               </Link>
 
               <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-gray-300 tabular-nums">
+                <span className="text-xs font-medium text-fg-muted tabular-nums">
                   {it.progress}
-                  <span className="text-gray-500"> / {cap ?? '?'}</span>
+                  <span className="text-fg-muted"> / {cap ?? '?'}</span>
                 </span>
                 <motion.button
                   type="button"
@@ -257,7 +259,7 @@ export function ContinueWatchingRail() {
                 </motion.button>
               </div>
 
-              <p className="mt-1 line-clamp-2 text-xs font-medium leading-tight text-white">
+              <p className="mt-1 line-clamp-2 text-xs font-medium leading-tight text-fg">
                 {title}
               </p>
             </div>

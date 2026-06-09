@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
+import { Settings } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { fetchTrackedMediaInfo, type TrackedMediaInfo } from '@/lib/anilist';
 import { ProfileDisplayNameEditor } from '@/components/ProfileDisplayNameEditor';
@@ -144,7 +145,7 @@ export default async function ProfilePage() {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <main id="profile-top" className="relative z-0 min-h-screen bg-[#0a0a0a] pb-16 scroll-mt-20">
+    <main id="profile-top" className="relative z-0 min-h-screen bg-bg pb-16 scroll-mt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-8 pt-12 sm:pt-16">
         {/* Avatar */}
         <div className="flex justify-center mb-4">
@@ -157,20 +158,21 @@ export default async function ProfilePage() {
           <ProfileDisplayNameEditor initialName={displayName} />
         </div>
 
-        <p className="mb-3 text-center text-sm text-gray-500">{user.email}</p>
+        <p className="mb-3 text-center text-sm text-fg-muted">{user.email}</p>
 
-        <div className="mb-8 flex justify-center gap-2">
+        <div className="mb-8 flex items-center justify-center gap-2">
           <a
             href="/import"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full border border-line/10 bg-line/[0.04] px-4 py-2 text-xs font-medium text-fg-muted hover:text-fg hover:border-line/20 transition-colors"
           >
             Import from AniList
           </a>
           <a
             href="/settings"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+            aria-label="Settings"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line/10 bg-line/[0.04] text-fg-muted hover:text-fg hover:border-line/20 transition-colors"
           >
-            Settings
+            <Settings className="h-4 w-4" />
           </a>
         </div>
 

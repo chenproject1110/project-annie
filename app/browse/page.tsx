@@ -21,6 +21,7 @@ interface SearchParams {
   focus?: string;
   genres?: string;
   formats?: string;
+  studio?: string;
 }
 
 function isValidSeason(season: string | undefined): season is Season {
@@ -37,13 +38,14 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
 
   const genres = searchParams.genres ? searchParams.genres.split(',').filter(Boolean) : [];
   const formats = searchParams.formats ? searchParams.formats.split(',').filter(Boolean) : [];
+  const studio = searchParams.studio || undefined;
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a]">
+    <main className="min-h-screen bg-bg">
       <div className="mx-auto max-w-7xl px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">Browse by season</h1>
-          <p className="text-gray-400 text-sm sm:text-base mt-1">
+          <h1 className="text-2xl md:text-4xl font-bold text-fg tracking-tight">Browse by season</h1>
+          <p className="text-fg-muted text-sm sm:text-base mt-1">
             Judge by Art, Not by Numbers.
           </p>
         </div>
@@ -54,14 +56,14 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
           focusSearch={searchParams.focus === 'search'}
         >
           <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">
+            <h2 className="text-xl sm:text-2xl font-bold text-fg">
               {season.charAt(0) + season.slice(1).toLowerCase()} {validYear}
             </h2>
-            <p className="text-gray-400 text-sm sm:text-base mt-1">Sorted by Popularity</p>
+            <p className="text-fg-muted text-sm sm:text-base mt-1">Sorted by Popularity</p>
           </div>
 
           <Suspense
-            key={`${validYear}-${season}-${genres.join(',')}-${formats.join(',')}`}
+            key={`${validYear}-${season}-${genres.join(',')}-${formats.join(',')}-${studio ?? ''}`}
             fallback={<JapandiBrowseGridSkeleton />}
           >
             <JapandiBrowseAnimeGrid
@@ -69,13 +71,14 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
               season={season}
               genres={genres}
               formats={formats}
+              studio={studio}
             />
           </Suspense>
         </AnimeGridWrapper>
       </div>
 
-      <footer className="border-t border-white/10 mt-12 sm:mt-20">
-        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
+      <footer className="border-t border-line/10 mt-12 sm:mt-20">
+        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-fg-muted text-xs sm:text-sm">
           <p>
             Data provided by{' '}
             <a

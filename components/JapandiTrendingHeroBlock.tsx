@@ -34,13 +34,12 @@ const DAY_LABELS: Record<DayKey, string> = {
 /*  Timezone handling                                                  */
 /* ------------------------------------------------------------------ */
 
-type TzMode = 'JST' | 'LOCAL' | 'GMT8';
+type TzMode = 'JST' | 'LOCAL';
 const TZ_STORAGE_KEY = 'annie_schedule_tz';
-const TZ_LABELS: Record<TzMode, string> = { JST: 'JST', LOCAL: 'Local', GMT8: 'GMT+8' };
+const TZ_LABELS: Record<TzMode, string> = { JST: 'JST', LOCAL: 'Local' };
 const TZ_ZONES: Record<TzMode, string | undefined> = {
   JST: 'Asia/Tokyo',
   LOCAL: undefined, // runtime local zone
-  GMT8: 'Asia/Singapore',
 };
 
 function formatTime(airingAt: number, mode: TzMode): string {
@@ -224,7 +223,10 @@ async function fetchSchedule(day: DayKey): Promise<ScheduleAnime[]> {
 /* ------------------------------------------------------------------ */
 
 interface TrackedAiringResponse {
-  Page: { media: Array<{ id: number; nextAiringEpisode: { airingAt: number } | null }> };
+  Page: {
+    pageInfo: { hasNextPage: boolean };
+    media: Array<{ id: number; nextAiringEpisode: { airingAt: number } | null }>;
+  };
 }
 
 const EMPTY_COUNTS: Record<DayKey, number> = {
@@ -241,20 +243,28 @@ async function fetchTrackedAiringCounts(ids: number[]): Promise<Record<DayKey, n
   const counts: Record<DayKey, number> = { ...EMPTY_COUNTS };
   if (ids.length === 0) return counts;
   try {
-    const data = await anilistQuery<TrackedAiringResponse>(
-      `query ($ids: [Int]) {
-        Page(page: 1, perPage: 50) {
-          media(id_in: $ids, type: ANIME, status: RELEASING) {
-            id
-            nextAiringEpisode { airingAt }
+    // Page through the whole tracked list — currently-airing titles can sit
+    // well past the first page once you've imported a large list.
+    let page = 1;
+    let hasNext = true;
+    while (hasNext && page <= 20) {
+      const data = await anilistQuery<TrackedAiringResponse>(
+        `query ($ids: [Int], $page: Int) {
+          Page(page: $page, perPage: 50) {
+            pageInfo { hasNextPage }
+            media(id_in: $ids, type: ANIME, status: RELEASING) {
+              id
+              nextAiringEpisode { airingAt }
+            }
           }
-        }
-      }`,
-      { ids: ids.slice(0, 50) },
-    );
-    for (const m of data.Page.media) {
-      if (!m.nextAiringEpisode) continue;
-      counts[jstWeekdayOf(m.nextAiringEpisode.airingAt)] += 1;
+        }`,
+        { ids, page },
+      );
+      for (const m of data.Page.media) {
+        if (m.nextAiringEpisode) counts[jstWeekdayOf(m.nextAiringEpisode.airingAt)] += 1;
+      }
+      hasNext = data.Page.pageInfo.hasNextPage;
+      page += 1;
     }
   } catch {
     // counts stay zeroed — badges simply won't show
@@ -292,7 +302,7 @@ function ScheduleCard({
     >
       <Link
         href={`/anime/${anime.id}`}
-        className={`group relative flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-gray-800 shadow-lg transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer ${
+        className={`group relative flex flex-col rounded-[32px] md:rounded-xl overflow-hidden bg-surface shadow-lg transition-all duration-300 md:hover:scale-105 active:scale-95 md:active:scale-100 cursor-pointer ${
           isLive
             ? 'ring-2 ring-violet-500/60 shadow-[0_0_24px_rgba(139,92,246,0.25)]'
             : 'hover:shadow-2xl'
@@ -429,7 +439,7 @@ function ScheduleCard({
             <h3 className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug">
               {title}
             </h3>
-            <p className="text-[10px] sm:text-xs text-gray-300 line-clamp-1 mt-0.5">
+            <p className="text-[10px] sm:text-xs text-fg-muted line-clamp-1 mt-0.5">
               {anime.studio}
               {anime.episodes ? ` · ${anime.episodes} eps` : ''}
             </p>
@@ -560,32 +570,17 @@ export function WeeklyAiringSchedule() {
     <section className="mx-auto max-w-7xl px-8 pt-2 pb-8 sm:pb-12" aria-label="Weekly airing schedule">
       <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl md:text-4xl font-bold text-fg tracking-tight">
             Weekly airing schedule
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base mt-1">
+          <p className="text-fg-muted text-sm sm:text-base mt-1">
             Times shown in {TZ_LABELS[tzMode]}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {hasTracked && (
-            <button
-              type="button"
-              onClick={() => setFollowingOnly((v) => !v)}
-              aria-pressed={followingOnly}
-              className={`min-h-9 rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors active:scale-95 ${
-                followingOnly
-                  ? 'bg-violet-600 border-violet-400/50 text-white'
-                  : 'bg-white/[0.04] border-white/10 text-gray-300 hover:text-white'
-              }`}
-            >
-              Following only
-            </button>
-          )}
-
           {/* Timezone segmented control */}
-          <div className="flex items-center rounded-full bg-white/[0.04] border border-white/10 p-0.5">
+          <div className="flex items-center rounded-full bg-line/[0.04] border border-line/10 p-0.5">
             {(Object.keys(TZ_LABELS) as TzMode[]).map((mode) => (
               <button
                 key={mode}
@@ -593,7 +588,7 @@ export function WeeklyAiringSchedule() {
                 onClick={() => changeTz(mode)}
                 aria-pressed={tzMode === mode}
                 className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                  tzMode === mode ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'
+                  tzMode === mode ? 'bg-violet-600 text-white' : 'text-fg-muted hover:text-fg'
                 }`}
               >
                 {TZ_LABELS[mode]}
@@ -606,7 +601,7 @@ export function WeeklyAiringSchedule() {
       {/* Day selector */}
       <div
         ref={selectorRef}
-        className="relative mb-6 sm:mb-8 flex gap-0.5 overflow-x-auto scrollbar-hide rounded-full bg-white/[0.04] border border-white/10 p-1 backdrop-blur-lg"
+        className="relative mb-6 sm:mb-8 flex gap-0.5 overflow-x-auto scrollbar-hide rounded-full bg-line/[0.04] border border-line/10 p-1 backdrop-blur-lg"
         role="tablist"
         aria-label="Day of week"
       >
@@ -622,7 +617,7 @@ export function WeeklyAiringSchedule() {
               aria-selected={active}
               onClick={() => setSelectedDay(day)}
               className={`relative z-[1] flex-1 min-w-[3rem] sm:min-w-[3.5rem] px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 whitespace-nowrap ${
-                active ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+                active ? 'text-white' : 'text-fg-muted hover:text-fg'
               }`}
             >
               {active && (
@@ -632,17 +627,15 @@ export function WeeklyAiringSchedule() {
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                 />
               )}
-              {/* Selected day: corner badge pinned to the top-right */}
-              {active && hasTracked && count > 0 && (
-                <span className="absolute -top-1 -right-1 z-[2] inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold bg-white text-violet-700 shadow ring-2 ring-[#0a0a0a]">
-                  {count}
-                </span>
-              )}
               <span className="relative z-[1] flex flex-col items-center gap-0.5">
                 <span className="flex items-center gap-1">
                   {DAY_LABELS[day]}
-                  {!active && hasTracked && count > 0 && (
-                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold bg-violet-500/30 text-violet-200">
+                  {hasTracked && count > 0 && (
+                    <span
+                      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+                        active ? 'bg-white text-violet-700' : 'bg-violet-600 text-white'
+                      }`}
+                    >
                       {count}
                     </span>
                   )}
@@ -658,6 +651,24 @@ export function WeeklyAiringSchedule() {
         })}
       </div>
 
+      {/* Following-only filter — below the weekday bar */}
+      {hasTracked && (
+        <div className="mb-6 sm:mb-8 -mt-2">
+          <button
+            type="button"
+            onClick={() => setFollowingOnly((v) => !v)}
+            aria-pressed={followingOnly}
+            className={`min-h-9 rounded-full px-3.5 py-1.5 text-xs font-semibold border transition-colors active:scale-95 ${
+              followingOnly
+                ? 'bg-violet-600 border-violet-400/50 text-white'
+                : 'bg-line/[0.04] border-line/10 text-fg-muted hover:text-fg'
+            }`}
+          >
+            Following only
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       <AnimatePresence mode="wait">
         {loading ? (
@@ -672,7 +683,7 @@ export function WeeklyAiringSchedule() {
             {Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-[2/3] rounded-[32px] md:rounded-xl bg-white/[0.04] animate-pulse border border-white/5"
+                className="aspect-[2/3] rounded-[32px] md:rounded-xl bg-line/[0.04] animate-pulse border border-line/5"
               />
             ))}
           </motion.div>
@@ -681,7 +692,7 @@ export function WeeklyAiringSchedule() {
             key="error"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-2xl border border-white/10 bg-white/5 px-6 py-16 text-center text-gray-400"
+            className="rounded-2xl border border-line/10 bg-line/5 px-6 py-16 text-center text-fg-muted"
           >
             Could not load schedule. Please try again later.
           </motion.div>
@@ -690,7 +701,7 @@ export function WeeklyAiringSchedule() {
             key="empty"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-2xl border border-white/10 bg-white/5 px-6 py-16 text-center text-gray-400"
+            className="rounded-2xl border border-line/10 bg-line/5 px-6 py-16 text-center text-fg-muted"
           >
             {followingOnly
               ? 'None of your tracked shows air on this day.'

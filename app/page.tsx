@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 function TrendingSkeleton() {
   return (
     <div className="mx-auto max-w-7xl px-8 pb-8 sm:pb-12">
-      <div className="h-[240px] sm:h-[340px] md:h-[400px] w-full rounded-2xl bg-white/[0.04] border border-white/5 animate-pulse" />
+      <div className="h-[240px] sm:h-[340px] md:h-[400px] w-full rounded-2xl bg-line/[0.04] border border-line/5 animate-pulse" />
     </div>
   );
 }
@@ -23,10 +23,10 @@ function TrendingSkeleton() {
 function RowSkeleton() {
   return (
     <div className="mx-auto max-w-7xl px-8 pb-12 sm:pb-20">
-      <div className="h-8 w-48 rounded-lg bg-white/10 animate-pulse mb-5" />
+      <div className="h-8 w-48 rounded-lg bg-line/10 animate-pulse mb-5" />
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="aspect-[2/3] rounded-xl bg-white/5 animate-pulse" />
+          <div key={i} className="aspect-[2/3] rounded-xl bg-line/5 animate-pulse" />
         ))}
       </div>
     </div>
@@ -36,7 +36,7 @@ function RowSkeleton() {
 // Synchronous shell → paints instantly; data-dependent sections stream in.
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#0a0a0a]">
+    <main className="min-h-screen bg-bg">
       <WeeklyAiringSchedule />
 
       <ContinueWatchingRail />
@@ -51,8 +51,8 @@ export default function HomePage() {
         <HomeComingNext />
       </Suspense>
 
-      <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-gray-500 text-xs sm:text-sm">
+      <footer className="border-t border-line/10">
+        <div className="mx-auto max-w-7xl px-8 py-4 sm:py-6 text-center text-fg-muted text-xs sm:text-sm">
           <p>
             Data from{' '}
             <a

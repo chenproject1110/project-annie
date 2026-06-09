@@ -7,6 +7,10 @@ import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { TitleLanguageProvider } from '@/context/TitleLanguageContext';
 import { TrackingProvider } from '@/context/TrackingContext';
+import { ThemeProvider } from '@/context/ThemeContext';
+
+// Runs before paint to set the theme class, preventing a light/dark flash.
+const themeScript = `(function(){try{var t=localStorage.getItem('annie_theme');if(t==='light'){document.documentElement.classList.add('light');}}catch(e){}})();`;
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -41,7 +45,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-[#0a0a0a] text-white antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={`${inter.className} bg-bg text-fg antialiased`}>
+        <ThemeProvider>
         <TitleLanguageProvider>
         <TrackingProvider>
           <Navbar />
@@ -51,14 +59,14 @@ export default function RootLayout({
           <BottomNav />
           <ServiceWorkerRegister />
           <Toaster
-            theme="dark"
             position="bottom-center"
             toastOptions={{
-              className: 'border-white/10 bg-white/[0.06] backdrop-blur-md text-white',
+              className: 'border-line/10 bg-surface text-fg',
             }}
           />
         </TrackingProvider>
         </TitleLanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

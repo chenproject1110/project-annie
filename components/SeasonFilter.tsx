@@ -56,7 +56,7 @@ function YearMenu({ value, years, onSelect }: YearMenuProps) {
 
   return (
     <div className="relative flex-shrink-0" ref={rootRef}>
-      <span id="year-field-label" className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">
+      <span id="year-field-label" className="block text-xs sm:text-sm font-medium text-fg-muted mb-1 sm:mb-2">
         Year
       </span>
       <button
@@ -67,21 +67,19 @@ function YearMenu({ value, years, onSelect }: YearMenuProps) {
         aria-labelledby="year-field-label year-menu-trigger"
         onClick={() => setOpen((o) => !o)}
         className={[
-          'group flex min-h-[2.875rem] sm:min-h-[3.25rem] w-full min-w-[7.25rem] items-center justify-between gap-3',
-          'rounded-xl border px-4 py-3 text-left text-sm sm:text-base font-medium text-white',
-          'bg-gradient-to-b from-zinc-800/95 to-zinc-900/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
-          'outline-none transition-[border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          'hover:border-violet-500/45 hover:shadow-[0_0_0_1px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]',
-          'focus-visible:border-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]',
+          'group inline-flex min-h-[2.875rem] sm:min-h-[3.25rem] items-center gap-2',
+          'rounded-xl border px-4 py-3 text-left text-sm sm:text-base font-medium text-fg',
+          'bg-line/[0.04] backdrop-blur-md',
+          'outline-none transition-all duration-200',
+          'hover:border-line/20 hover:bg-line/[0.06]',
+          'focus-visible:border-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/55 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
           'active:scale-[0.99]',
-          open
-            ? 'border-violet-500/55 shadow-[0_0_0_1px_rgba(139,92,246,0.2),0_0_28px_-8px_rgba(124,58,237,0.35)]'
-            : 'border-zinc-600/80',
+          open ? 'border-violet-500/50 bg-violet-600/10' : 'border-line/10',
         ].join(' ')}
       >
         <span className="tabular-nums">{value}</span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-violet-400 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`h-4 w-4 shrink-0 text-violet-400 transition-transform duration-200 ${
             open ? 'rotate-180' : ''
           }`}
           aria-hidden
@@ -92,7 +90,7 @@ function YearMenu({ value, years, onSelect }: YearMenuProps) {
         <ul
           role="listbox"
           aria-labelledby="year-field-label"
-          className="absolute left-0 top-full z-[80] mt-2 max-h-60 min-w-full overflow-y-auto overflow-x-hidden rounded-xl border border-violet-500/30 bg-zinc-950 py-1.5 shadow-[0_16px_50px_-12px_rgba(0,0,0,0.75),0_0_0_1px_rgba(139,92,246,0.15),0_0_40px_-14px_rgba(124,58,237,0.35)] backdrop-blur-md animate-silk-reveal ring-1 ring-violet-500/15"
+          className="absolute left-0 top-full z-[80] mt-2 max-h-60 min-w-full overflow-y-auto overflow-x-hidden rounded-xl border border-line/10 bg-[#101013]/95 py-1.5 shadow-[0_16px_50px_-12px_rgba(0,0,0,0.75)] backdrop-blur-md animate-silk-reveal"
         >
           {years.map((y) => {
             const selected = y === value;
@@ -108,10 +106,10 @@ function YearMenu({ value, years, onSelect }: YearMenuProps) {
                   }}
                   className={[
                     'flex w-full px-4 py-2.5 text-left text-sm sm:text-base tabular-nums',
-                    'transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    'transition-colors duration-150',
                     selected
-                      ? 'bg-violet-600/30 text-violet-100 font-semibold'
-                      : 'text-zinc-200 hover:bg-violet-600/15 active:scale-[0.99]',
+                      ? 'bg-violet-600/25 text-violet-100 font-semibold'
+                      : 'text-fg-muted hover:bg-line/[0.06] active:scale-[0.99]',
                   ].join(' ')}
                 >
                   {y}
@@ -150,17 +148,17 @@ export function SeasonFilter({ currentYear, currentSeason }: SeasonFilterProps) 
       />
 
       <div className="min-w-0 max-w-full sm:max-w-none sm:flex-shrink-0">
-        <span className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Season</span>
+        <span className="block text-xs sm:text-sm font-medium text-fg-muted mb-1 sm:mb-2">Season</span>
         <div className="flex w-max max-w-full gap-1.5 overflow-x-auto overflow-y-visible pb-1 sm:max-w-none sm:overflow-visible sm:pb-0 scrollbar-hide">
           {SEASONS.map((season) => (
             <button
               key={season}
               type="button"
               onClick={() => updateFilters(currentYear, season)}
-              className={`min-h-11 shrink-0 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap active:scale-95 ${
+              className={`min-h-11 shrink-0 px-3 sm:px-6 py-2 sm:py-3 rounded-lg border font-medium transition-all text-sm sm:text-base whitespace-nowrap active:scale-95 ${
                 currentSeason === season
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/50'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 hover:border-gray-600'
+                  ? 'bg-violet-600 text-white border-violet-400/50 shadow-lg shadow-violet-500/30'
+                  : 'bg-line/[0.04] text-fg-muted border-line/10 hover:text-fg hover:border-line/20'
               }`}
             >
               {SEASON_LABELS[season]}

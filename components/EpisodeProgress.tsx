@@ -107,13 +107,13 @@ export function EpisodeProgress({
   const pct = max != null ? Math.min(100, Math.round((progress / max) * 100)) : 0;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md p-3 sm:p-4">
+    <div className="rounded-2xl border border-line/10 bg-line/[0.04] backdrop-blur-md p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-xs uppercase tracking-wide text-gray-400">Episodes</span>
+          <span className="text-xs uppercase tracking-wide text-fg-muted">Episodes</span>
           <span className="text-sm font-semibold text-white tabular-nums">
             {progress}
-            <span className="text-gray-500"> / {max ?? '?'}</span>
+            <span className="text-fg-muted"> / {max ?? '?'}</span>
             {atMax && (
               <span className="ml-2 inline-flex items-center gap-1 text-emerald-400">
                 <Check className="h-3.5 w-3.5" />
@@ -129,7 +129,7 @@ export function EpisodeProgress({
             onClick={() => step(-1)}
             disabled={progress <= 0}
             whileTap={reduceMotion ? undefined : { scale: 0.9 }}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-gray-300 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:hover:text-gray-300 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line/10 bg-black/40 text-fg-muted hover:text-white hover:border-line/20 disabled:opacity-40 disabled:hover:text-fg-muted transition-colors"
             aria-label="Decrease episodes watched"
           >
             <Minus className="h-4 w-4" />
@@ -148,7 +148,7 @@ export function EpisodeProgress({
       </div>
 
       {max != null && (
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10" aria-hidden>
+        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-line/10" aria-hidden>
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-400"
             animate={{ width: `${pct}%` }}

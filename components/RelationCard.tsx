@@ -18,7 +18,7 @@ export function RelationCard({ relation }: RelationCardProps) {
 
   return (
     <Link href={`/anime/${node.id}`} className="group">
-      <div className="bg-gray-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all">
+      <div className="bg-surface rounded-lg overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all">
         <div className="relative aspect-[2/3]">
           {node.coverImage.extraLarge ? (
             <Image
@@ -55,7 +55,7 @@ export function RelationCard({ relation }: RelationCardProps) {
             {title}
           </p>
           {node.format && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-fg-muted mt-1">
               {node.format.replace('_', ' ')}
             </p>
           )}

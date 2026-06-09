@@ -77,10 +77,10 @@ export function RecommendationsRail() {
   return (
     <section className="mx-auto max-w-7xl px-8 pb-10 sm:pb-14" aria-labelledby="recs-heading">
       <div className="mb-4 md:mb-6">
-        <h2 id="recs-heading" className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+        <h2 id="recs-heading" className="text-2xl md:text-4xl font-bold text-fg tracking-tight">
           {heading}
         </h2>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">{subtitle}</p>
+        <p className="text-fg-muted text-sm sm:text-base mt-1">{subtitle}</p>
       </div>
 
       {!loaded ? (
@@ -88,7 +88,7 @@ export function RecommendationsRail() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="w-[42vw] max-w-[168px] shrink-0 md:w-auto md:max-w-none aspect-[2/3] rounded-xl bg-white/5 animate-pulse"
+              className="w-[42vw] max-w-[168px] shrink-0 md:w-auto md:max-w-none aspect-[2/3] rounded-xl bg-line/5 animate-pulse"
             />
           ))}
         </div>

@@ -69,6 +69,7 @@ export function SearchBar({ isOpen, autoFocus = false, defaultValue = '' }: Sear
     e.preventDefault();
     // Show the full results list rather than jumping to the top hit.
     setShowSuggestions(false);
+    inputRef.current?.blur(); // dismiss the mobile keyboard
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
@@ -99,7 +100,7 @@ export function SearchBar({ isOpen, autoFocus = false, defaultValue = '' }: Sear
       <div className="relative w-full max-w-2xl mx-auto">
         {/* Left Icon: Search */}
         <Search
-          className="absolute left-5 top-1/2 z-20 -translate-y-1/2 w-6 h-6 text-gray-300 pointer-events-none"
+          className="absolute left-5 top-1/2 z-20 -translate-y-1/2 w-6 h-6 text-fg-muted pointer-events-none"
           aria-hidden
         />
 
@@ -111,17 +112,17 @@ export function SearchBar({ isOpen, autoFocus = false, defaultValue = '' }: Sear
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="The journey starts here"
-          className="relative z-0 w-full pl-14 pr-16 py-4 bg-white/10 backdrop-blur-md text-white text-lg rounded-2xl border border-white/10 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 focus:shadow-[0_0_30px_-5px_rgba(139,92,246,0.4)] transition-all placeholder-gray-400"
+          className="relative z-0 w-full pl-14 pr-16 py-4 bg-line/10 backdrop-blur-md text-fg text-lg rounded-2xl border border-line/10 hover:border-line/20 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 focus:shadow-[0_0_30px_-5px_rgba(139,92,246,0.4)] transition-all placeholder-fg-muted"
         />
 
         {searchTerm && (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 min-h-11 min-w-11 inline-flex items-center justify-center hover:bg-white/10 rounded-full transition-all active:scale-95"
+            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 min-h-11 min-w-11 inline-flex items-center justify-center hover:bg-line/10 rounded-full transition-all active:scale-95"
             aria-label="Clear search"
           >
-            <X className="w-5 h-5 text-gray-300 hover:text-white" />
+            <X className="w-5 h-5 text-fg-muted hover:text-fg" />
           </button>
         )}
 

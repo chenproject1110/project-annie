@@ -208,10 +208,10 @@ export function TrendingCarousel({ items }: TrendingCarouselProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-4 md:mb-6">
         <div>
-          <h2 className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+          <h2 className="text-2xl md:text-4xl font-bold text-fg tracking-tight">
             Trending now
           </h2>
-          <p className="text-gray-400 text-sm sm:text-base mt-1">
+          <p className="text-fg-muted text-sm sm:text-base mt-1">
             Most popular across all seasons
           </p>
         </div>
@@ -248,7 +248,7 @@ export function TrendingCarousel({ items }: TrendingCarouselProps) {
         <button
           type="button"
           onClick={() => scrollBy(-1)}
-          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-line/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
             canScrollLeft ? 'md:opacity-0 md:group-hover/carousel:opacity-100' : 'md:opacity-0 pointer-events-none'
           }`}
           aria-label="Scroll left"
@@ -260,7 +260,7 @@ export function TrendingCarousel({ items }: TrendingCarouselProps) {
         <button
           type="button"
           onClick={() => scrollBy(1)}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-white/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm border border-line/10 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-opacity duration-300 ${
             canScrollRight ? 'md:opacity-0 md:group-hover/carousel:opacity-100' : 'md:opacity-0 pointer-events-none'
           }`}
           aria-label="Scroll right"

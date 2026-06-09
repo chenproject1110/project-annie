@@ -2,13 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------ */
+/*  Theme tokens — RGB channel triplets so Tailwind alpha works.       */
+/*  Dark is the default (:root); .light overrides for light mode.      */
+/* ------------------------------------------------------------------ */
+:root {
+  --bg: 10 10 10;          /* #0a0a0a */
+  --surface: 31 41 55;     /* ~ gray-800 cards */
+  --surface-2: 16 16 19;   /* deep panels / sheets */
+  --fg: 255 255 255;       /* primary text */
+  --fg-muted: 156 163 175; /* gray-400 */
+  --line: 255 255 255;     /* borders/overlays, used at low alpha */
+}
+
+html.light {
+  --bg: 246 247 249;
+  --surface: 255 255 255;
+  --surface-2: 237 239 243;
+  --fg: 17 18 23;
+  --fg-muted: 58 62 72;    /* darker so unselected text stays clearly readable */
+  --line: 17 20 32;        /* dark overlay/border on light surfaces */
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  color: #ffffff;
-  background-color: #0a0a0a;
+  color: rgb(var(--fg));
+  background-color: rgb(var(--bg));
 }
 
 /* Custom scrollbar for webkit browsers */

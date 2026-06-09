@@ -83,8 +83,8 @@ export function ProfileListView({ items }: { items: ProfileItem[] }) {
   if (items.length === 0) {
     return (
       <div className="py-16 text-center">
-        <p className="text-gray-500">No anime tracked yet.</p>
-        <p className="mt-1 text-sm text-gray-600">Browse anime, or import your list to get started.</p>
+        <p className="text-fg-muted">No anime tracked yet.</p>
+        <p className="mt-1 text-sm text-fg-muted">Browse anime, or import your list to get started.</p>
       </div>
     );
   }
@@ -107,7 +107,7 @@ export function ProfileListView({ items }: { items: ProfileItem[] }) {
               className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium border transition-colors active:scale-95 ${
                 active
                   ? 'bg-violet-600 border-violet-400/50 text-white'
-                  : 'bg-white/[0.04] border-white/10 text-gray-300 hover:text-white'
+                  : 'bg-line/[0.04] border-line/10 text-fg-muted hover:text-fg'
               }`}
             >
               {s === 'favourites' && <Heart className="h-3 w-3" fill="currentColor" />}
@@ -120,19 +120,19 @@ export function ProfileListView({ items }: { items: ProfileItem[] }) {
       {/* Search + sort */}
       <div className="mb-5 flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your list"
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+            className="w-full rounded-xl border border-line/10 bg-line/[0.04] pl-9 pr-3 py-2.5 text-sm text-fg placeholder-fg-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
           />
         </div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+          className="rounded-xl border border-line/10 bg-line/[0.04] px-3 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-violet-500/50"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value} className="bg-zinc-900">
@@ -143,7 +143,7 @@ export function ProfileListView({ items }: { items: ProfileItem[] }) {
       </div>
 
       {visible.length === 0 ? (
-        <p className="py-12 text-center text-sm text-gray-500">No matches.</p>
+        <p className="py-12 text-center text-sm text-fg-muted">No matches.</p>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {visible.map((it) => (

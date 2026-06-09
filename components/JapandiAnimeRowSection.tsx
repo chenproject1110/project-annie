@@ -10,7 +10,7 @@ export interface JapandiShowAllLinkProps {
 
 export function JapandiShowAllLink({ href, label, variant = 'header' }: JapandiShowAllLinkProps) {
   const base =
-    'inline-flex min-h-11 items-center justify-center font-semibold text-white bg-transparent border border-violet-500/90 hover:bg-violet-500/10 hover:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] active:scale-95 transition-all';
+    'inline-flex min-h-11 items-center justify-center font-semibold text-fg bg-transparent border border-violet-500/90 hover:bg-violet-500/10 hover:border-violet-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-95 transition-all';
   if (variant === 'mobile-wide') {
     return (
       <Link
@@ -49,10 +49,10 @@ export function JapandiSectionHeader({
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-4 md:mb-6">
       <div>
-        <h2 id={id} className="text-2xl md:text-4xl font-bold text-white tracking-tight">
+        <h2 id={id} className="text-2xl md:text-4xl font-bold text-fg tracking-tight">
           {title}
         </h2>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">{subtitle}</p>
+        <p className="text-fg-muted text-sm sm:text-base mt-1">{subtitle}</p>
       </div>
       <div className="hidden md:flex shrink-0">
         <JapandiShowAllLink href={showAllHref} label={showAllLabel} variant="header" />
@@ -113,7 +113,7 @@ export function JapandiAnimeRowSection({
       />
 
       {items.length === 0 ? (
-        <p className="text-gray-500 text-sm">{emptyMessage}</p>
+        <p className="text-fg-muted text-sm">{emptyMessage}</p>
       ) : (
         <>
           <div className="flex flex-nowrap md:grid md:grid-cols-6 gap-[0.75rem] overflow-x-auto md:overflow-visible pb-3 scrollbar-hide snap-x snap-mandatory md:snap-none scroll-smooth">
