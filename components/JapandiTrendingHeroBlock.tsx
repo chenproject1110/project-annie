@@ -601,7 +601,7 @@ export function WeeklyAiringSchedule() {
       {/* Day selector */}
       <div
         ref={selectorRef}
-        className="relative mb-6 sm:mb-8 flex gap-0.5 overflow-x-auto scrollbar-hide rounded-full bg-line/[0.04] border border-line/10 p-1 backdrop-blur-lg"
+        className="relative mb-6 sm:mb-8 flex gap-0.5 overflow-x-auto scrollbar-hide rounded-full bg-line/[0.04] border border-line/10 px-1.5 py-2.5 backdrop-blur-lg"
         role="tablist"
         aria-label="Day of week"
       >
@@ -627,15 +627,17 @@ export function WeeklyAiringSchedule() {
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
                 />
               )}
+              {/* Selected day: corner badge — kept inside the tab so the scroll container can't crop it */}
+              {hasTracked && count > 0 && active && (
+                <span className="absolute -top-1 -right-0.5 z-[20] inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-line/40 px-1 text-[9px] font-bold bg-white text-violet-700 shadow-sm">
+                  {count}
+                </span>
+              )}
               <span className="relative z-[1] flex flex-col items-center gap-0.5">
                 <span className="flex items-center gap-1">
                   {DAY_LABELS[day]}
-                  {hasTracked && count > 0 && (
-                    <span
-                      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                        active ? 'bg-white text-violet-700' : 'bg-violet-600 text-white'
-                      }`}
-                    >
+                  {hasTracked && count > 0 && !active && (
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-line/40 px-1 text-[9px] font-bold bg-violet-600 text-white">
                       {count}
                     </span>
                   )}
