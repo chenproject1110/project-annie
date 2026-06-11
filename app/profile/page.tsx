@@ -6,6 +6,7 @@ import { fetchTrackedMediaInfo, type TrackedMediaInfo } from '@/lib/anilist';
 import { ProfileDisplayNameEditor } from '@/components/ProfileDisplayNameEditor';
 import { ProfileStats, type ProfileStatsData } from '@/components/ProfileStats';
 import { ProfileListView, type ProfileItem } from '@/components/ProfileListView';
+import { ActivityFeed } from '@/components/ActivityFeed';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 
 export const dynamic = 'force-dynamic';
@@ -177,6 +178,8 @@ export default async function ProfilePage() {
         </div>
 
         <ProfileStats stats={stats} />
+
+        <ActivityFeed items={items} />
 
         <ProfileListView items={items} />
       </div>

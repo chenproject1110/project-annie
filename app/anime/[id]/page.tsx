@@ -19,6 +19,7 @@ import { TrackingPanel } from '@/components/TrackingPanel';
 import { EntryExtras } from '@/components/EntryExtras';
 import { ThemeSongs, ThemeSongsSkeleton } from '@/components/ThemeSongs';
 import { AnimeRecommendations } from '@/components/AnimeRecommendations';
+import { SpoilerSynopsis } from '@/components/SpoilerSynopsis';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 interface PageProps {
@@ -267,15 +268,16 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 order-2">
             {description && (
-              <div>
+              <div className="annie-dense">
                 <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">Synopsis</h2>
-                <p className="text-sm sm:text-base text-fg-muted leading-relaxed whitespace-pre-wrap">
-                  {description}
-                </p>
+                <SpoilerSynopsis
+                  text={description}
+                  isWatching={currentTrackingStatus === 'watching'}
+                />
               </div>
             )}
 
-            <div>
+            <div className="annie-dense">
               <h2 className="text-xl sm:text-2xl font-bold text-fg mb-3 sm:mb-4">Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {anime.format && (
@@ -394,9 +396,11 @@ export default async function AnimeDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            <Suspense fallback={<ThemeSongsSkeleton />}>
-              <ThemeSongs idMal={anime.idMal} />
-            </Suspense>
+            <div className="annie-dense">
+              <Suspense fallback={<ThemeSongsSkeleton />}>
+                <ThemeSongs idMal={anime.idMal} />
+              </Suspense>
+            </div>
 
             {relationEdges.length > 0 && (
               <div>

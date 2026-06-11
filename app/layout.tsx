@@ -8,9 +8,10 @@ import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { TitleLanguageProvider } from '@/context/TitleLanguageContext';
 import { TrackingProvider } from '@/context/TrackingContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SettingsProvider } from '@/context/SettingsContext';
 
-// Runs before paint to set the theme class, preventing a light/dark flash.
-const themeScript = `(function(){try{var t=localStorage.getItem('annie_theme');if(t==='light'){document.documentElement.classList.add('light');}}catch(e){}})();`;
+// Runs before paint to set theme + minimal-mode classes, preventing a flash.
+const themeScript = `(function(){try{var t=localStorage.getItem('annie_theme');if(t==='light'){document.documentElement.classList.add('light');}var s=localStorage.getItem('annie_settings');if(s&&JSON.parse(s).minimal){document.documentElement.classList.add('minimal');}}catch(e){}})();`;
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -50,6 +51,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-bg text-fg antialiased`}>
         <ThemeProvider>
+        <SettingsProvider>
         <TitleLanguageProvider>
         <TrackingProvider>
           <Navbar />
@@ -66,6 +68,7 @@ export default function RootLayout({
           />
         </TrackingProvider>
         </TitleLanguageProvider>
+        </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

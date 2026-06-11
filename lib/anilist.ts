@@ -826,6 +826,49 @@ export async function searchStudios(searchTerm: string): Promise<{ id: number; n
   }
 }
 
+interface MalResolveResponse {
+  Page: {
+    pageInfo: { hasNextPage: boolean };
+    media: Array<{ id: number; idMal: number | null; episodes: number | null }>;
+  };
+}
+
+/** Map MyAnimeList ids -> AniList ids (+ episode counts), paginated. */
+export async function resolveMalIds(
+  malIds: number[],
+): Promise<Map<number, { id: number; episodes: number | null }>> {
+  const map = new Map<number, { id: number; episodes: number | null }>();
+  if (malIds.length === 0) return map;
+
+  // AniList caps id_in lists; chunk to 50 ids per query.
+  for (let i = 0; i < malIds.length; i += 50) {
+    const chunk = malIds.slice(i, i + 50);
+    let page = 1;
+    let hasNext = true;
+    while (hasNext && page <= 10) {
+      try {
+        const data = await anilistQuery<MalResolveResponse>(
+          `query ($ids: [Int], $page: Int) {
+            Page(page: $page, perPage: 50) {
+              pageInfo { hasNextPage }
+              media(idMal_in: $ids, type: ANIME) { id idMal episodes }
+            }
+          }`,
+          { ids: chunk, page },
+        );
+        for (const m of data.Page.media) {
+          if (m.idMal != null) map.set(m.idMal, { id: m.id, episodes: m.episodes });
+        }
+        hasNext = data.Page.pageInfo.hasNextPage;
+        page += 1;
+      } catch {
+        break;
+      }
+    }
+  }
+  return map;
+}
+
 export async function fetchSearchSuggestions(
   searchTerm: string,
   limit: number = 5,

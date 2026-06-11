@@ -7,6 +7,24 @@ import { LogOut, Download, Sun, Moon } from 'lucide-react';
 import { TitleLanguageSwitch } from '@/components/TitleLanguageSwitch';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useTheme } from '@/context/ThemeContext';
+import { useSettings } from '@/context/SettingsContext';
+
+function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? 'bg-violet-600' : 'bg-line/20'}`}
+    >
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
+      />
+    </button>
+  );
+}
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -26,6 +44,7 @@ const pillClass =
 export function SettingsClient() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
+  const { minimal, spoilerSafe, setMinimal, setSpoilerSafe } = useSettings();
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +68,14 @@ export function SettingsClient() {
           {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           {theme === 'dark' ? 'Light' : 'Dark'}
         </button>
+      </Row>
+
+      <Row label="Minimal mode" hint="Hide synopsis & dense details for a cleaner read">
+        <Switch on={minimal} onChange={setMinimal} label="Minimal mode" />
+      </Row>
+
+      <Row label="Spoiler-safe" hint="Blur the synopsis of shows you're mid-watch">
+        <Switch on={spoilerSafe} onChange={setSpoilerSafe} label="Spoiler-safe" />
       </Row>
 
       <Row label="Title language" hint="How titles are shown across the app">

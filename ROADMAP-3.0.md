@@ -9,13 +9,13 @@ polish over growth.
 Effort: S = hours, M = a day or two, L = several days. Impact = value to you on a
 phone.
 
-> **Progress (autonomous session):** Shipped the warm-up batch — **studio filter
-> (3)**, **mobile bottom-sheet filters (4)**, and **haptics (5)** on +1 / status /
-> favourite / complete. Deferred (need on-device verification or a big isolated
-> refactor): **light/dark theme (1)**, **swipe actions (2)** — needs a list-view
-> layout first, **pull-to-refresh (6)** — risks fighting native scroll, **sidebar
-> redesign (8)**. These are intentionally left until you can run and tap-test, so
-> nothing ships broken. No new migration needed for this batch.
+> **Progress:** Shipped — studio filter (3), bottom-sheet filters (4), haptics (5),
+> **light/dark theme (1)**, **MAL import (11)** with keep-furthest-progress merge,
+> **recent-activity feed (10)**, and **comfort toggles (7)** — minimal mode +
+> spoiler-safe blur. **Still open:** swipe actions (2) and pull-to-refresh (6) —
+> deferred, need on-device gesture testing; **sidebar redesign (8)**; **custom lists
+> / tags (9)** — needs a new DB table/migration; and **notifications** — on hold.
+> No new migration needed for what's shipped so far.
 
 ---
 
